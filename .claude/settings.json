@@ -13,7 +13,7 @@
           {
             "type": "command",
             "if": "Bash(git commit*)",
-            "command": "FAILED=0; HURL_FILES=$(find backend/tests/hurl -name '*.hurl' 2>/dev/null); [ -n \"$HURL_FILES\" ] && { hurl --test backend/tests/hurl/*.hurl --variable base_url=http://localhost:8000 || FAILED=1; }; [ -f frontend/playwright.config.ts ] && { (cd frontend && npx playwright test --headless) || FAILED=1; }; [ $FAILED -eq 1 ] && exit 2; exit 0",
+            "command": "FAILED=0; HURL_FILES=$(find backend/tests/hurl -name '*.hurl' 2>/dev/null); [ -n \"$HURL_FILES\" ] && { hurl --test backend/tests/hurl/*.hurl --variable base_url=http://localhost:8000 || FAILED=1; }; E2E_FILES=$(find frontend/e2e -name '*.spec.ts' 2>/dev/null); [ -n \"$E2E_FILES\" ] && { (cd frontend && npx playwright test) || FAILED=1; }; [ $FAILED -eq 1 ] && exit 2; exit 0",
             "statusMessage": "커밋 전 테스트 검증 중...",
             "timeout": 120
           }

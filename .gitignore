@@ -1,0 +1,24 @@
+# Dependencies
+node_modules/
+frontend/node_modules/
+
+# Build
+frontend/dist/
+
+# Python
+__pycache__/
+*.py[cod]
+backend/.venv/
+*.env
+
+# DB
+*.db
+
+# IDE
+.DS_Store
+.vscode/
+.idea/
+
+# Playwright
+frontend/playwright-report/
+frontend/test-results/
