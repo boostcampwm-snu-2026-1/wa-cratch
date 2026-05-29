@@ -85,7 +85,8 @@ cd frontend && npx playwright test
 2. 테스트 코드 먼저 작성 (개발자)
    - 백엔드: backend/tests/hurl/ 에 Hurl 파일
    - 프론트: frontend/e2e/ 에 Playwright 스펙
-3. /feature-dev 실행 → AI가 이슈 내용 + 테스트 코드를 함께 읽고 구현
+3. /feature-dev #이슈번호 실행 → GitHub MCP로 이슈 읽기 + 기존 테스트 코드 확인 후 구현
+   (구현 목표: 이미 작성된 테스트가 통과하는 것)
 4. 작업 단위마다 커밋
    - 형식: feat: [작업 내용 명시] (#이슈번호)
    - Pre-commit Hook이 관련 테스트 통과 여부 강제 검증 (실패 시 커밋 차단)
@@ -124,6 +125,7 @@ git clone https://github.com/ohsuhyeon0119/cat-cratch.wiki.git /tmp/catcratch-wi
   feat: 로그인 API 구현 (#3)
   fix: 스프라이트 이동 오차 수정 (#7)
   ```
+- 커밋 전, 현재 이슈에 해당하는 테스트(Hurl / Playwright)가 모두 통과해야 한다. 통과하지 않으면 커밋하지 않는다.
 - 커밋 전 테스트 통과 여부는 Hook이 자동 검증한다 (실패 시 차단됨)
 
 ### PR 생성 시
