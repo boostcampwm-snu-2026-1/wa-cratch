@@ -61,8 +61,14 @@ jobs:
         run: sleep 3
       - name: Install Hurl
         run: |
-          curl -LO https://github.com/Orange-OpenSource/hurl/releases/latest/download/hurl_x86_64_linux.tar.gz
-          tar -xzf hurl_x86_64_linux.tar.gz
-          sudo mv hurl /usr/local/bin/
+          VERSION=$(curl -s https://api.github.com/repos/Orange-OpenSource/hurl/releases/latest | grep '"tag_name"' | cut -d'"' -f4)
+          curl -LO "https://github.com/Orange-OpenSource/hurl/releases/download/${VERSION}/hurl-${VERSION}-x86_64-unknown-linux-gnu.tar.gz"
+          tar -xzf "hurl-${VERSION}-x86_64-unknown-linux-gnu.tar.gz"
+          sudo mv "hurl-${VERSION}-x86_64-unknown-linux-gnu/bin/hurl" /usr/local/bin/
       - name: Run Hurl tests
-        run: hurl --test backend/tests/hurl/*.hurl --variable base_url=http://localhost:8000
+        run: |
+          if [ -d backend/tests/hurl ] && ls backend/tests/hurl/*.hurl 2>/dev/null; then
+            hurl --test backend/tests/hurl/*.hurl --variable base_url=http://localhost:8000
+          else
+            echo "No Hurl test files found, skipping."
+          fi
