@@ -125,6 +125,7 @@ git clone https://github.com/ohsuhyeon0119/cat-cratch.wiki.git /tmp/catcratch-wi
   feat: 로그인 API 구현 (#3)
   fix: 스프라이트 이동 오차 수정 (#7)
   ```
+- 커밋 전, 현재 이슈에 해당하는 테스트(Hurl / Playwright)가 모두 통과해야 한다. 통과하지 않으면 커밋하지 않는다.
 - 커밋 전 테스트 통과 여부는 Hook이 자동 검증한다 (실패 시 차단됨)
 
 ### PR 생성 시
