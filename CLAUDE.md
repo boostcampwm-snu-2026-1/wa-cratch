@@ -96,7 +96,6 @@ cd frontend && npx playwright test
 
 ### Hook 규칙 (.claude/settings.json)
 - **PreToolUse / git commit**: Hurl + Playwright 테스트 미통과 시 커밋 차단 (exit 2)
-- **PreToolUse / Edit,Write**: `backend/tests/hurl/`, `frontend/e2e/` 파일 수정 차단 (exit 2)
 - **PreToolUse / Bash**: `git push --force` 차단 (exit 2)
 
 ### Knowledge Base
@@ -119,7 +118,7 @@ git clone https://github.com/ohsuhyeon0119/cat-cratch.wiki.git /tmp/catcratch-wi
 
 ### 구현 중
 
-- 테스트 파일(`backend/tests/hurl/`, `frontend/e2e/`)은 절대 수정하지 않는다
+- 테스트 파일(`backend/tests/hurl/`, `frontend/e2e/`)을 수정해야 할 경우, 반드시 개발자에게 먼저 확인을 받는다. 확인 없이 절대 수정하지 않는다.
 - 커밋은 작업 단위로, 반드시 이슈 번호를 포함한다
   ```
   feat: 로그인 API 구현 (#3)
@@ -147,7 +146,7 @@ git clone https://github.com/ohsuhyeon0119/cat-cratch.wiki.git /tmp/catcratch-wi
 ### 하지 말아야 할 것
 
 - `main`에 직접 커밋
-- 테스트 파일 수정 (Hook이 차단하지만 시도조차 하지 않는다)
+- 테스트 파일을 개발자 확인 없이 수정
 - `git push --force`
 - GitHub 이슈/칸반 상태 변경 (읽기만 가능)
 - Wiki 내용 수정 (읽기만 가능)
