@@ -13,14 +13,17 @@ router = APIRouter()
 # ---------------------------------------------------------------------------
 
 MOCK_PROJECTS: list[dict] = [
-    {"id": "proj-1", "title": "냥이 점프", "author": "코딩고양이", "authorId": "user-test-001", "emoji": "🐱", "likes": 234, "views": 1200, "published": True, "description": "냥이와 함께 장애물을 피하며 달려가요!", "tags": ["게임", "냥이", "달리기"], "blocks_json": {}},
-    {"id": "proj-2", "title": "바다 탐험", "author": "바다소녀", "authorId": "user-002", "emoji": "🌊", "likes": 189, "views": 876, "published": True, "description": "깊은 바다 속을 탐험해봐요!", "tags": ["탐험", "바다"], "blocks_json": {}},
-    {"id": "proj-3", "title": "별 수집하기", "author": "별동이", "authorId": "user-003", "emoji": "🌟", "likes": 312, "views": 2100, "published": True, "description": "하늘의 별을 모두 모아봐요!", "tags": ["별", "수집"], "blocks_json": {}},
-    {"id": "proj-4", "title": "나비 미로", "author": "초등코더", "authorId": "user-004", "emoji": "🦋", "likes": 156, "views": 654, "published": True, "description": "미로를 탈출하는 나비를 도와주세요.", "tags": ["미로", "나비"], "blocks_json": {}},
-    {"id": "proj-5", "title": "토끼 달리기", "author": "토끼야", "authorId": "user-005", "emoji": "🐰", "likes": 201, "views": 920, "published": True, "description": "빠른 토끼를 조종해봐요!", "tags": ["달리기", "토끼"], "blocks_json": {}},
-    {"id": "proj-11", "title": "냥이의 대모험", "author": "테스트유저", "authorId": "user-test-001", "emoji": "🐱", "likes": 234, "views": 1200, "published": True, "description": "대모험!", "tags": ["게임"], "blocks_json": {}},
-    {"id": "proj-12", "title": "바다 탐험", "author": "테스트유저", "authorId": "user-test-001", "emoji": "🌊", "likes": 89, "views": 430, "published": True, "description": "바다!", "tags": ["탐험"], "blocks_json": {}},
-    {"id": "proj-13", "title": "별 수집 게임 (작업중)", "author": "테스트유저", "authorId": "user-test-001", "emoji": "🌟", "likes": 0, "views": 0, "published": False, "description": "", "tags": [], "blocks_json": {}},
+    {"id": "proj-1",  "title": "냥이 점프",      "author": "코딩고양이", "authorId": "user-001", "emoji": "🐱", "likes": 234, "views": 1200, "published": True,  "description": "냥이와 함께 장애물을 피하며 달려가요!", "tags": ["게임", "냥이", "달리기"], "blocks_json": {}},
+    {"id": "proj-2",  "title": "바다 탐험",      "author": "바다소녀",   "authorId": "user-002", "emoji": "🌊", "likes": 189, "views":  876, "published": True,  "description": "깊은 바다 속을 탐험해봐요!",            "tags": ["탐험", "바다"],           "blocks_json": {}},
+    {"id": "proj-3",  "title": "별 수집하기",    "author": "별동이",     "authorId": "user-003", "emoji": "🌟", "likes": 312, "views": 2100, "published": True,  "description": "하늘의 별을 모두 모아봐요!",            "tags": ["별", "수집"],             "blocks_json": {}},
+    {"id": "proj-4",  "title": "나비 미로",      "author": "초등코더",   "authorId": "user-004", "emoji": "🦋", "likes": 156, "views":  654, "published": True,  "description": "미로를 탈출하는 나비를 도와주세요.",     "tags": ["미로", "나비"],           "blocks_json": {}},
+    {"id": "proj-5",  "title": "토끼 달리기",    "author": "토끼야",     "authorId": "user-005", "emoji": "🐰", "likes": 201, "views":  920, "published": True,  "description": "빠른 토끼를 조종해봐요!",               "tags": ["달리기", "토끼"],         "blocks_json": {}},
+    {"id": "proj-6",  "title": "무지개 그림판",  "author": "색깔왕",     "authorId": "user-006", "emoji": "🌈", "likes": 278, "views": 1500, "published": True,  "description": "무지개 색으로 그림을 그려요!",          "tags": ["그림", "창작"],           "blocks_json": {}},
+    {"id": "proj-7",  "title": "우주 여행",      "author": "우주선장",   "authorId": "user-007", "emoji": "🚀", "likes": 344, "views": 2800, "published": True,  "description": "우주를 누비는 모험을 떠나요!",          "tags": ["우주", "모험"],           "blocks_json": {}},
+    {"id": "proj-8",  "title": "음악 연주",      "author": "피아노맨",   "authorId": "user-008", "emoji": "🎵", "likes": 198, "views":  730, "published": True,  "description": "나만의 음악을 만들어봐요!",             "tags": ["음악", "연주"],           "blocks_json": {}},
+    {"id": "proj-11", "title": "냥이의 대모험",  "author": "테스트유저", "authorId": "user-test-001", "emoji": "🐱", "likes": 234, "views": 1200, "published": True,  "description": "대모험!", "tags": ["게임"],    "blocks_json": {}},
+    {"id": "proj-12", "title": "바다 탐험 2",   "author": "테스트유저", "authorId": "user-test-001", "emoji": "🌊", "likes":  89, "views":  430, "published": True,  "description": "바다!", "tags": ["탐험"],     "blocks_json": {}},
+    {"id": "proj-13", "title": "별 수집 (작업중)", "author": "테스트유저", "authorId": "user-test-001", "emoji": "🌟", "likes": 0, "views": 0, "published": False, "description": "", "tags": [],              "blocks_json": {}},
 ]
 
 
