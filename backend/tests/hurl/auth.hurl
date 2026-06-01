@@ -2,7 +2,7 @@
 POST {{base_url}}/auth/register
 Content-Type: application/json
 {
-  "username": "newuser",
+  "username": "testuser_{{newUuid}}",
   "nickname": "새유저",
   "password": "password123"
 }
