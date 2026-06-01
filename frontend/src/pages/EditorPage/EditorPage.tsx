@@ -66,30 +66,42 @@ export default function EditorPage() {
     return () => window.removeEventListener('resize', handleResize)
   }, [])
 
+  // isRunning이 true로 바뀐 후 useEffect에서 실행 → React가 렌더 완료 후 실행 보장
+  const pendingRun = useRef(false)
+
   const handleRun = useCallback(() => {
+    pendingRun.current = true
     setIsRunning(true)
-    // setTimeout으로 실행 로직을 다음 태스크로 분리해
-    // React가 "실행 중" 상태를 먼저 렌더링하도록 보장
-    setTimeout(() => {
-      if (!workspaceRef.current || !canvasRef.current) return
-      const canvas = canvasRef.current
+  }, [])
 
-      if (runtimeRef.current) runtimeRef.current.stop()
-      if (detachKeysRef.current) detachKeysRef.current()
+  useEffect(() => {
+    if (!isRunning || !pendingRun.current) return
+    pendingRun.current = false
 
-      const initial = { ...defaultSpriteState(), bg: selectedBg }
-      const runtime = new SpriteRuntime(canvas, initial, (state) => {
-        setSpriteState({ ...state })
-      })
-      runtimeRef.current = runtime
-      detachKeysRef.current = runtime.attachKeyListeners()
-      setSpriteState(initial)
+    if (!workspaceRef.current || !canvasRef.current) return
+    const canvas = canvasRef.current
 
-      runtime.run(workspaceRef.current!).finally(() => {
-        setIsRunning(false)
-      })
-    }, 0)
-  }, [selectedBg])
+    if (runtimeRef.current) runtimeRef.current.stop()
+    if (detachKeysRef.current) detachKeysRef.current()
+
+    const initial = { ...defaultSpriteState(), bg: selectedBg }
+    const runtime = new SpriteRuntime(canvas, initial, (state) => {
+      setSpriteState({ ...state })
+    })
+    runtimeRef.current = runtime
+    detachKeysRef.current = runtime.attachKeyListeners()
+    setSpriteState(initial)
+
+    const runStart = Date.now()
+    runtime.run(workspaceRef.current).finally(() => {
+      // 빈 워크스페이스에서도 "실행 중" 상태가 최소 150ms 이상 보이도록 보장
+      const elapsed = Date.now() - runStart
+      const delay = Math.max(0, 150 - elapsed)
+      setTimeout(() => setIsRunning(false), delay)
+    })
+  // selectedBg는 실행 시 캡처되므로 의도적으로 제외
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isRunning])
 
   const handleStop = useCallback(() => {
     runtimeRef.current?.stop()

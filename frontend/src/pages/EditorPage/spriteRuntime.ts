@@ -355,6 +355,17 @@ export class SpriteRuntime {
         }
         break
       }
+      case 'wc_repeat_until': {
+        const inner = block.getInputTargetBlock('DO') as Block | null
+        const condBlock = block.getInputTargetBlock('COND') as Block | null
+        while (!this.stopFlag) {
+          const cond = condBlock ? await this.evalBool(condBlock) : false
+          if (cond) break
+          await this.executeStack(inner)
+          await sleep(0)
+        }
+        break
+      }
       case 'wc_forever': {
         const inner = block.getInputTargetBlock('DO') as Block | null
         while (!this.stopFlag) {
@@ -372,6 +383,19 @@ export class SpriteRuntime {
         }
         break
       }
+      case 'wc_if_else': {
+        const condBlock = block.getInputTargetBlock('COND') as Block | null
+        const cond = condBlock ? await this.evalBool(condBlock) : false
+        if (cond) {
+          await this.executeStack(block.getInputTargetBlock('DO') as Block | null)
+        } else {
+          await this.executeStack(block.getInputTargetBlock('ELSE') as Block | null)
+        }
+        break
+      }
+      case 'wc_stop_all':
+        this.stopFlag = true
+        break
 
       // ── MOTION ──
       case 'wc_move_steps': {
@@ -418,6 +442,56 @@ export class SpriteRuntime {
         this.state.direction = 90
         this.render()
         await sleep(16)
+        break
+      }
+      case 'wc_change_x': {
+        this.state.x += Number(block.getFieldValue('DX'))
+        this.clampToWall()
+        this.render()
+        await sleep(16)
+        break
+      }
+      case 'wc_change_y': {
+        this.state.y += Number(block.getFieldValue('DY'))
+        this.clampToWall()
+        this.render()
+        await sleep(16)
+        break
+      }
+      case 'wc_set_direction': {
+        this.state.direction = Number(block.getFieldValue('DIR'))
+        this.render()
+        await sleep(16)
+        break
+      }
+      case 'wc_bounce_wall': {
+        const maxX = STAGE_W / 2 - 36
+        const maxY = STAGE_H / 2 - 44
+        if (Math.abs(this.state.x) >= maxX) {
+          this.state.direction = 180 - this.state.direction
+        }
+        if (Math.abs(this.state.y) >= maxY) {
+          this.state.direction = -this.state.direction
+        }
+        this.state.direction = ((this.state.direction % 360) + 360) % 360
+        this.render()
+        await sleep(16)
+        break
+      }
+      case 'wc_glide_to': {
+        const secs = Number(block.getFieldValue('SECS'))
+        const targetX = Number(block.getFieldValue('X'))
+        const targetY = Number(block.getFieldValue('Y'))
+        const startX = this.state.x
+        const startY = this.state.y
+        const frames = Math.max(1, Math.round(secs * 30))
+        for (let i = 1; i <= frames && !this.stopFlag; i++) {
+          const t = i / frames
+          this.state.x = startX + (targetX - startX) * t
+          this.state.y = startY + (targetY - startY) * t
+          this.render()
+          await sleep(1000 / 30)
+        }
         break
       }
 
@@ -470,6 +544,10 @@ export class SpriteRuntime {
   private async evalBool(block: Block): Promise<boolean> {
     if (block.type === 'wc_wall_touching') {
       return this.isTouchingWall()
+    }
+    if (block.type === 'wc_key_pressed') {
+      const key = block.getFieldValue('KEY') as string
+      return this.keysDown.has(key)
     }
     return false
   }
