@@ -172,6 +172,33 @@
   position: relative;
 }
 
+/* flyout 닫기 버튼 — toolbox(160px) 바로 우측 상단에 위치 */
+.flyoutCloseBtn {
+  position: absolute;
+  top: 6px;
+  left: 164px;   /* blocklyToolbox 너비(160px) + 4px */
+  z-index: 50;
+  height: 26px;
+  padding: 0 10px 0 8px;
+  background: rgba(44, 24, 16, 0.10);
+  border: 1.5px solid rgba(44, 24, 16, 0.12);
+  border-radius: 0 8px 8px 0;
+  cursor: pointer;
+  color: var(--mid);
+  font-family: var(--font-b);
+  font-size: 13px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  transition: background .15s, border-color .15s;
+  user-select: none;
+}
+.flyoutCloseBtn:hover {
+  background: rgba(44, 24, 16, 0.18);
+  border-color: rgba(44, 24, 16, 0.22);
+}
+
 /* Blockly v10 툴박스 카테고리 스타일 오버라이드 */
 :global(.blocklyToolboxDiv) {
   background: #FFF4EE !important;
@@ -194,10 +221,9 @@
 :global(.blocklyToolboxCategory:hover:not(.blocklyToolboxSelected)) {
   background-color: var(--orange-pale) !important;
 }
-/* 선택 상태 — Blockly 자체 rgba(255,255,255,0.6) !important 를 더 높은 명시도로 재정의 */
+/* 선택 상태 — JS가 category 색상을 inline !important로 직접 설정하므로 CSS는 Blockly 기본값만 덮음 */
 :global(.blocklyToolboxCategory.blocklyToolboxSelected) {
-  background-color: var(--orange) !important;
-  border-left-color: var(--orange-dk) !important;
+  border-left-color: transparent !important;
 }
 
 /* 컨테이너 — flex item으로 가로 채움 */

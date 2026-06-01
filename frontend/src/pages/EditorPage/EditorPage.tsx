@@ -23,6 +23,7 @@ export default function EditorPage() {
   const [selectedBg, setSelectedBg] = useState<Background>('sky')
   const [blockCount, setBlockCount] = useState(0)
   const [projectTitle, setProjectTitle] = useState('새 프로젝트')
+  const [flyoutOpen, setFlyoutOpen] = useState(false)
 
   const workspaceDivRef = useRef<HTMLDivElement>(null)
   const workspaceRef = useRef<Blockly.WorkspaceSvg | null>(null)
@@ -46,34 +47,29 @@ export default function EditorPage() {
     })
     workspaceRef.current = workspace
 
-    // Flyout 자동 닫힘 방지 + << 닫기 버튼 삽입
+    // Flyout 자동 닫힘 방지
     const flyout = workspace.getFlyout()
     if (flyout) {
       flyout.autoClose = false
 
-      const injectCloseBtn = () => {
-        const flyoutDiv = div.querySelector('.blocklyFlyout')?.closest('svg')?.parentElement
-          ?? div.querySelector('[class*="blocklyFlyout"]')?.parentElement
-        if (!flyoutDiv || flyoutDiv.querySelector('.wc-flyout-close')) return
-        const btn = document.createElement('button')
-        btn.className = 'wc-flyout-close'
-        btn.textContent = '«'
-        btn.title = '닫기'
-        Object.assign(btn.style, {
-          position: 'absolute', top: '8px', right: '8px', zIndex: '200',
-          width: '28px', height: '28px', borderRadius: '50%', border: 'none',
-          background: 'var(--orange)', color: '#fff', cursor: 'pointer',
-          fontSize: '13px', fontWeight: '800', display: 'flex',
-          alignItems: 'center', justifyContent: 'center', boxShadow: '1px 2px 0 var(--orange-dk)',
-        })
-        btn.addEventListener('click', () => flyout.hide())
-        flyoutDiv.style.position = 'relative'
-        flyoutDiv.appendChild(btn)
-      }
-
+      // 카테고리 선택 시: 해당 카테고리 색상을 배경으로 적용 + flyout 상태 동기화
       workspace.addChangeListener((e: Blockly.Events.Abstract) => {
         if (e.type === Blockly.Events.TOOLBOX_ITEM_SELECT) {
-          setTimeout(injectCloseBtn, 50)
+          requestAnimationFrame(() => {
+            // 모든 카테고리 배경 초기화
+            div.querySelectorAll('.blocklyToolboxCategory').forEach((cat) => {
+              ;(cat as HTMLElement).style.removeProperty('background-color')
+            })
+            // 선택된 카테고리에 자기 색상 적용
+            const selected = div.querySelector(
+              '.blocklyToolboxCategory.blocklyToolboxSelected'
+            ) as HTMLElement | null
+            if (selected) {
+              const color = selected.style.borderLeftColor
+              if (color) selected.style.setProperty('background-color', color, 'important')
+            }
+            setFlyoutOpen(flyout.isVisible())
+          })
         }
       })
     }
@@ -241,6 +237,18 @@ export default function EditorPage() {
         {/* BLOCKLY WORKSPACE — toolbox + workspace area */}
         <div className={s.workspace}>
           <div ref={workspaceDivRef} className={s.blocklyArea} />
+          {flyoutOpen && (
+            <button
+              className={s.flyoutCloseBtn}
+              title="블록 목록 닫기"
+              onClick={() => {
+                workspaceRef.current?.getFlyout()?.hide()
+                setFlyoutOpen(false)
+              }}
+            >
+              «
+            </button>
+          )}
         </div>
 
         {/* STAGE PANEL */}
