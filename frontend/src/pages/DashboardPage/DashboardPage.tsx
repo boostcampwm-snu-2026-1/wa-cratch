@@ -1,7 +1,11 @@
 import { Link } from 'react-router-dom'
+import { useEffect, useState } from 'react'
 import s from './DashboardPage.module.css'
-import { MY_PROJECTS } from '../../mock/projects'
-import { MOCK_ACTIVITY } from '../../mock/activity'
+import { getMyProjects } from '../../api/projects'
+import type { Project } from '../../api/projects'
+import { getActivity } from '../../api/activity'
+import type { Activity } from '../../api/activity'
+import { useAuth } from '../../context/AuthContext'
 import { useToast } from '../../hooks/useToast'
 import Toast from '../../components/Toast/Toast'
 
@@ -15,6 +19,29 @@ const ACT_CLS: Record<string, string> = {
 
 export default function DashboardPage() {
   const { toastVisible, toastMessage, toastType, showToast } = useToast()
+  const { user } = useAuth()
+
+  const [projects, setProjects] = useState<Project[]>([])
+  const [activity, setActivity] = useState<Activity[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    setLoading(true)
+    Promise.all([getMyProjects(), getActivity()])
+      .then(([projs, acts]) => {
+        setProjects(projs)
+        setActivity(acts)
+      })
+      .catch(() => {
+        // API 오류 시 빈 상태 유지
+      })
+      .finally(() => {
+        setLoading(false)
+      })
+  }, [])
+
+  const nickname = user?.nickname ?? '...'
+  const avatar = user?.avatar ?? '🐱'
 
   return (
     <div className={s.page}>
@@ -26,8 +53,8 @@ export default function DashboardPage() {
         </Link>
         <div className={s.tnSpacer}/>
         <div className={s.tnSearch}><input type="text" placeholder="내 프로젝트 검색..."/></div>
-        <span className={s.tnName}>코딩냥이</span>
-        <div className={s.tnAvatar}>🧇</div>
+        <span className={s.tnName}>{nickname}</span>
+        <div className={s.tnAvatar}>{avatar}</div>
       </div>
 
       {/* BODY */}
@@ -35,8 +62,8 @@ export default function DashboardPage() {
         {/* SIDEBAR */}
         <div className={s.sidebar}>
           <div className={s.sbAvatarBlock}>
-            <div className={s.sbAvatar}>🧇</div>
-            <div className={s.sbUsername}>코딩냥이</div>
+            <div className={s.sbAvatar}>{avatar}</div>
+            <div className={s.sbUsername}>{nickname}</div>
           </div>
           <div className={s.sbSection}>
             <div className={s.sbSectionTitle}>나의 공간</div>
@@ -56,10 +83,10 @@ export default function DashboardPage() {
         <div className={s.content}>
           <div className={s.welcome}>
             <div>
-              <div className={s.welcomeGreeting}>안녕, 코딩냥이! 🧇</div>
+              <div className={s.welcomeGreeting}>안녕, {nickname}! {avatar}</div>
               <div className={s.welcomeSub}>오늘도 멋진 작품을 만들어볼까요?</div>
             </div>
-            <div className={s.welcomeMascot}>🧇</div>
+            <div className={s.welcomeMascot}>{avatar}</div>
           </div>
 
           <div className={s.sectionHeader}>
@@ -72,7 +99,7 @@ export default function DashboardPage() {
               <div className={s.pnIcon}>+</div>
               <div className={s.pnText}>새 프로젝트 만들기</div>
             </Link>
-            {MY_PROJECTS.map((p, index) => (
+            {loading ? null : projects.map((p, index) => (
               <div key={p.id} className={s.projCard}>
                 <div className={`${s.projThumb} ${THUMB_CLASSES[index % 6]}`}>
                   {p.emoji}
@@ -102,7 +129,7 @@ export default function DashboardPage() {
             <h2 className={s.sectionTitle}>🔔 최근 활동</h2>
           </div>
           <div className={s.activityList}>
-            {MOCK_ACTIVITY.map((a, i) => (
+            {loading ? null : activity.map((a, i) => (
               <div key={i} className={s.activityItem}>
                 <div className={`${s.actIcon} ${ACT_CLS[a.type] ?? ''}`}>{a.icon}</div>
                 <div>

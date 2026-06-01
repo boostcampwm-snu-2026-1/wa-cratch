@@ -1,16 +1,28 @@
-import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { useState, useEffect } from 'react'
+import { Link, useParams } from 'react-router-dom'
 import s from './PlayPage.module.css'
 import { useToast } from '../../hooks/useToast'
 import Toast from '../../components/Toast/Toast'
 import ShareModal from '../../components/ShareModal/ShareModal'
+import { getProject, type Project } from '../../api/projects'
 
 export default function PlayPage() {
+  const { id } = useParams<{ id: string }>()
+  const [project, setProject] = useState<Project | null>(null)
   const [isPlaying, setIsPlaying] = useState(false)
   const [isLiked, setIsLiked] = useState(false)
-  const [likeCount, setLikeCount] = useState(1234)
+  const [likeCount, setLikeCount] = useState(0)
   const [shareOpen, setShareOpen] = useState(false)
   const { toastVisible, toastMessage, toastType, showToast } = useToast()
+
+  useEffect(() => {
+    if (id) {
+      getProject(id).then((data) => {
+        setProject(data)
+        setLikeCount(data.likes)
+      }).catch(() => {})
+    }
+  }, [id])
 
   return (
     <>
@@ -23,8 +35,8 @@ export default function PlayPage() {
         </Link>
         <div className={s.navDiv}/>
         <div>
-          <div className={s.navProjectTitle}>와냥이의 대모험</div>
-          <div className={s.navAuthor}>by 코딩고양이</div>
+          <div className={s.navProjectTitle}>{project?.title || ''}</div>
+          <div className={s.navAuthor}>by {project?.author || ''}</div>
         </div>
         <div className={s.navSpacer}/>
         <Link to="/login"      className={`${s.btn} ${s.btnGhost}`}   style={{ fontSize: 13 }}>로그인</Link>
@@ -66,27 +78,25 @@ export default function PlayPage() {
           </div>
 
           <div className={s.infoCard}>
-            <h1 className={s.infoTitle}>냥이의 대모험 🐾</h1>
+            <h1 className={s.infoTitle}>{project?.title || ''} {project?.emoji || ''}</h1>
             <div className={s.authorRow}>
-              <div className={s.authorAvatar}>🐱</div>
+              <div className={s.authorAvatar}>{project?.emoji || '🐱'}</div>
               <div>
-                <div className={s.authorName}>코딩고양이</div>
+                <div className={s.authorName}>{project?.author || ''}</div>
                 <div className={s.authorSub}>2026년 5월 작성</div>
               </div>
             </div>
             <p className={s.infoDesc}>
-              냥이와 함께 장애물을 피하며 골인 지점까지 달려가 보세요!<br/>
-              방향키를 사용해서 냥이를 움직일 수 있어요.<br/>
-              얼마나 멀리 갈 수 있는지 도전해봐요! 🌟
+              {project?.description || ''}
             </p>
             <div className={s.infoTags}>
-              <span className={s.infoTag}>🎮 게임</span>
-              <span className={s.infoTag}>🐱 냥이</span>
-              <span className={s.infoTag}>🏃 달리기</span>
+              {project?.tags.map((tag, idx) => (
+                <span key={idx} className={s.infoTag}>{tag}</span>
+              ))}
             </div>
             <div className={s.infoStats}>
-              <div className={s.infoStat}><span className={s.infoStatN}>1,234</span><span className={s.infoStatL}>❤️ 좋아요</span></div>
-              <div className={s.infoStat}><span className={s.infoStatN}>8,412</span><span className={s.infoStatL}>👁️ 조회</span></div>
+              <div className={s.infoStat}><span className={s.infoStatN}>{(project?.likes || 0).toLocaleString()}</span><span className={s.infoStatL}>❤️ 좋아요</span></div>
+              <div className={s.infoStat}><span className={s.infoStatN}>{(project?.views || 0).toLocaleString()}</span><span className={s.infoStatL}>👁️ 조회</span></div>
             </div>
           </div>
         </div>
@@ -146,8 +156,8 @@ export default function PlayPage() {
       <Toast visible={toastVisible} message={toastMessage} type={toastType} />
       <ShareModal
         isOpen={shareOpen}
-        projectId="1"
-        projectTitle="냥이의 대모험"
+        projectId={project?.id || ''}
+        projectTitle={project?.title || ''}
         onClose={() => setShareOpen(false)}
       />
     </>

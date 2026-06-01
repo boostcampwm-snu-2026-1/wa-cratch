@@ -1,0 +1,59 @@
+#!/usr/bin/env bash
+# pre-commit: Playwright + Hurl 테스트 통과 전 커밋 차단
+set -euo pipefail
+
+REPO_ROOT=$(git rev-parse --show-toplevel)
+FAILED=0
+BACKEND_STARTED=0
+
+# ── Hurl tests (백엔드 실행 중일 때만) ─────────────────────────────
+HURL_DIR="$REPO_ROOT/backend/tests/hurl"
+if [ -n "$(find "$HURL_DIR" -name '*.hurl' 2>/dev/null)" ]; then
+  if curl -sf http://localhost:8000/docs > /dev/null 2>&1; then
+    echo "▶ Hurl 테스트 실행 중..."
+    if ! hurl --test "$HURL_DIR"/*.hurl --variable base_url=http://localhost:8000 2>&1 | tail -5; then
+      echo "✗ Hurl 테스트 실패"
+      FAILED=1
+    else
+      echo "✓ Hurl 테스트 통과"
+    fi
+  else
+    # 백엔드가 없으면 venv로 직접 기동
+    VENV="$REPO_ROOT/backend/.venv/bin/uvicorn"
+    if [ -f "$VENV" ]; then
+      echo "▶ 백엔드 서버 기동 중..."
+      (cd "$REPO_ROOT/backend" && .venv/bin/uvicorn app.main:app --port 8000 > /dev/null 2>&1) &
+      BACKEND_PID=$!
+      BACKEND_STARTED=1
+      sleep 3
+      if ! hurl --test "$HURL_DIR"/*.hurl --variable base_url=http://localhost:8000 2>&1 | tail -5; then
+        echo "✗ Hurl 테스트 실패"
+        FAILED=1
+      else
+        echo "✓ Hurl 테스트 통과"
+      fi
+    else
+      echo "⚠ 백엔드 미실행 + venv 없음 → Hurl 테스트 건너뜀"
+    fi
+  fi
+fi
+
+# ── Playwright tests ────────────────────────────────────────────────
+E2E_DIR="$REPO_ROOT/frontend/e2e"
+if [ -n "$(find "$E2E_DIR" -name '*.spec.ts' 2>/dev/null)" ]; then
+  echo "▶ Playwright 테스트 실행 중..."
+  if ! (cd "$REPO_ROOT/frontend" && npx playwright test --reporter=line 2>&1 | tail -10); then
+    echo "✗ Playwright 테스트 실패"
+    FAILED=1
+  else
+    echo "✓ Playwright 테스트 통과"
+  fi
+fi
+
+# ── 백엔드 정리 ────────────────────────────────────────────────────
+if [ "$BACKEND_STARTED" -eq 1 ] && [ -n "${BACKEND_PID:-}" ]; then
+  kill "$BACKEND_PID" 2>/dev/null || true
+fi
+
+[ "$FAILED" -eq 1 ] && exit 1
+exit 0
