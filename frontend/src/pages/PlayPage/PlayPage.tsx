@@ -4,11 +4,14 @@ import s from './PlayPage.module.css'
 import { useToast } from '../../hooks/useToast'
 import Toast from '../../components/Toast/Toast'
 import ShareModal from '../../components/ShareModal/ShareModal'
-import { getProject, type Project } from '../../api/projects'
+import { getProject, getProjects, type Project } from '../../api/projects'
+import { useAuth } from '../../context/AuthContext'
 
 export default function PlayPage() {
   const { id } = useParams<{ id: string }>()
+  const { user } = useAuth()
   const [project, setProject] = useState<Project | null>(null)
+  const [authorProjects, setAuthorProjects] = useState<Project[]>([])
   const [isPlaying, setIsPlaying] = useState(false)
   const [isLiked, setIsLiked] = useState(false)
   const [likeCount, setLikeCount] = useState(0)
@@ -16,12 +19,15 @@ export default function PlayPage() {
   const { toastVisible, toastMessage, toastType, showToast } = useToast()
 
   useEffect(() => {
-    if (id) {
-      getProject(id).then((data) => {
-        setProject(data)
-        setLikeCount(data.likes)
+    if (!id) return
+    getProject(id).then((data) => {
+      setProject(data)
+      setLikeCount(data.likes)
+      // 같은 작성자의 다른 공개 프로젝트 로드
+      getProjects().then((all) => {
+        setAuthorProjects(all.filter(p => p.authorId === data.authorId && p.id !== data.id))
       }).catch(() => {})
-    }
+    }).catch(() => {})
   }, [id])
 
   return (
@@ -39,8 +45,12 @@ export default function PlayPage() {
           <div className={s.navAuthor}>by {project?.author || ''}</div>
         </div>
         <div className={s.navSpacer}/>
-        <Link to="/login"      className={`${s.btn} ${s.btnGhost}`}   style={{ fontSize: 13 }}>로그인</Link>
-        <Link to="/editor/new" className={`${s.btn} ${s.btnPrimary}`} style={{ fontSize: 13 }}>+ 만들기</Link>
+        {user ? (
+          <Link to="/dashboard" className={`${s.btn} ${s.btnGhost}`} style={{ fontSize: 13 }}>{user.avatar} {user.nickname}</Link>
+        ) : (
+          <Link to="/login" className={`${s.btn} ${s.btnGhost}`} style={{ fontSize: 13 }}>로그인</Link>
+        )}
+        <Link to={user ? '/editor/new' : '/login'} className={`${s.btn} ${s.btnPrimary}`} style={{ fontSize: 13 }}>+ 만들기</Link>
       </nav>
 
       <div className={s.main}>
@@ -113,43 +123,35 @@ export default function PlayPage() {
             </div>
           </div>
 
-          <div className={s.creatorCard}>
-            <div className={s.creatorRow}>
-              <div className={s.creatorAvatar}>🐱</div>
-              <div>
-                <div className={s.creatorName}>코딩고양이</div>
-                <div className={s.creatorSub}>작품 12개 · 팔로워 234명</div>
+          {project && (
+            <div className={s.creatorCard}>
+              <div className={s.creatorRow}>
+                <div className={s.creatorAvatar}>{project.emoji}</div>
+                <div>
+                  <div className={s.creatorName}>{project.author}</div>
+                  <div className={s.creatorSub}>작품 {authorProjects.length + 1}개</div>
+                </div>
+              </div>
+              <div className={s.creatorStats}>
+                <div className={s.cs}><span className={s.csN}>{authorProjects.length + 1}</span><span className={s.csL}>🎮 작품</span></div>
+                <div className={s.cs}><span className={s.csN}>{(project.likes + authorProjects.reduce((s, p) => s + p.likes, 0)).toLocaleString()}</span><span className={s.csL}>❤️ 좋아요</span></div>
               </div>
             </div>
-            <div className={s.creatorStats}>
-              <div className={s.cs}><span className={s.csN}>12</span><span className={s.csL}>🎮 작품</span></div>
-              <div className={s.cs}><span className={s.csN}>234</span><span className={s.csL}>👥 팔로워</span></div>
-              <div className={s.cs}><span className={s.csN}>3.4k</span><span className={s.csL}>❤️ 좋아요</span></div>
-            </div>
-            <button className={s.followBtn}>+ 팔로우하기</button>
-          </div>
+          )}
 
-          <div className={s.card}>
-            <div className={s.cardTitle}>🎨 이 친구의 다른 작품</div>
-            <div className={s.miniGrid}>
-              <Link to="/play/2" className={s.miniCard}>
-                <div className={`${s.miniThumb} ${s.mt1}`}>🌊</div>
-                <div className={s.miniTitle}>바다 탐험</div>
-              </Link>
-              <Link to="/play/3" className={s.miniCard}>
-                <div className={`${s.miniThumb} ${s.mt2}`}>🌟</div>
-                <div className={s.miniTitle}>별 수집</div>
-              </Link>
-              <Link to="/play/4" className={s.miniCard}>
-                <div className={`${s.miniThumb} ${s.mt3}`}>🦋</div>
-                <div className={s.miniTitle}>나비 미로</div>
-              </Link>
-              <Link to="/play/5" className={s.miniCard}>
-                <div className={`${s.miniThumb} ${s.mt4}`}>🎵</div>
-                <div className={s.miniTitle}>음악 연주</div>
-              </Link>
+          {authorProjects.length > 0 && (
+            <div className={s.card}>
+              <div className={s.cardTitle}>🎨 이 친구의 다른 작품</div>
+              <div className={s.miniGrid}>
+                {authorProjects.slice(0, 4).map((p, i) => (
+                  <Link key={p.id} to={`/play/${p.id}`} className={s.miniCard}>
+                    <div className={`${s.miniThumb} ${[s.mt1, s.mt2, s.mt3, s.mt4][i % 4]}`}>{p.emoji}</div>
+                    <div className={s.miniTitle}>{p.title}</div>
+                  </Link>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
 
