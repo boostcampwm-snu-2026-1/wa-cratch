@@ -172,31 +172,30 @@
   position: relative;
 }
 
-/* flyout 닫기 버튼 — toolbox(160px) 바로 우측 상단에 위치 */
+/* flyout 닫기 버튼 — flyout 우측 상단, left는 JS로 동적 설정 */
 .flyoutCloseBtn {
   position: absolute;
   top: 6px;
-  left: 164px;   /* blocklyToolbox 너비(160px) + 4px */
   z-index: 50;
+  width: 26px;
   height: 26px;
-  padding: 0 10px 0 8px;
-  background: rgba(44, 24, 16, 0.10);
-  border: 1.5px solid rgba(44, 24, 16, 0.12);
-  border-radius: 0 8px 8px 0;
+  padding: 0;
+  background: rgba(44, 24, 16, 0.12);
+  border: 1.5px solid rgba(44, 24, 16, 0.14);
+  border-radius: 50%;
   cursor: pointer;
   color: var(--mid);
   font-family: var(--font-b);
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 800;
   display: flex;
   align-items: center;
-  gap: 4px;
-  transition: background .15s, border-color .15s;
+  justify-content: center;
+  transition: background .15s;
   user-select: none;
 }
 .flyoutCloseBtn:hover {
-  background: rgba(44, 24, 16, 0.18);
-  border-color: rgba(44, 24, 16, 0.22);
+  background: rgba(44, 24, 16, 0.22);
 }
 
 /* Blockly v10 툴박스 카테고리 스타일 오버라이드 */

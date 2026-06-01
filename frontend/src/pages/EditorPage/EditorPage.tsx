@@ -24,6 +24,7 @@ export default function EditorPage() {
   const [blockCount, setBlockCount] = useState(0)
   const [projectTitle, setProjectTitle] = useState('새 프로젝트')
   const [flyoutOpen, setFlyoutOpen] = useState(false)
+  const [flyoutBtnLeft, setFlyoutBtnLeft] = useState(164)
 
   const workspaceDivRef = useRef<HTMLDivElement>(null)
   const workspaceRef = useRef<Blockly.WorkspaceSvg | null>(null)
@@ -68,7 +69,13 @@ export default function EditorPage() {
               const color = selected.style.borderLeftColor
               if (color) selected.style.setProperty('background-color', color, 'important')
             }
-            setFlyoutOpen(flyout.isVisible())
+            const isVisible = flyout.isVisible()
+            setFlyoutOpen(isVisible)
+            if (isVisible) {
+              const toolboxW = (div.querySelector('.blocklyToolbox') as HTMLElement | null)?.offsetWidth ?? 160
+              const flyoutW = (flyout as unknown as { getWidth?: () => number }).getWidth?.() ?? 280
+              setFlyoutBtnLeft(toolboxW + flyoutW - 28)
+            }
           })
         }
       })
@@ -240,6 +247,7 @@ export default function EditorPage() {
           {flyoutOpen && (
             <button
               className={s.flyoutCloseBtn}
+              style={{ left: flyoutBtnLeft }}
               title="블록 목록 닫기"
               onClick={() => {
                 workspaceRef.current?.getFlyout()?.hide()
