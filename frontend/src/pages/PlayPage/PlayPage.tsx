@@ -122,7 +122,10 @@ export default function PlayPage() {
         </div>
         <div className={s.navSpacer}/>
         {user ? (
-          <Link to="/dashboard" className={`${s.btn} ${s.btnGhost}`} style={{ fontSize: 13 }}>{user.avatar} {user.nickname}</Link>
+          <Link to="/dashboard" className={s.navUser}>
+            <span className={s.navUserName}>{user.nickname}</span>
+            <div className={s.navUserAvatar}>{user.avatar}</div>
+          </Link>
         ) : (
           <Link to="/login" className={`${s.btn} ${s.btnGhost}`} style={{ fontSize: 13 }}>로그인</Link>
         )}
