@@ -74,7 +74,8 @@ export default function EditorPage() {
             if (isVisible) {
               const toolboxW = (div.querySelector('.blocklyToolbox') as HTMLElement | null)?.offsetWidth ?? 160
               const flyoutW = (flyout as unknown as { getWidth?: () => number }).getWidth?.() ?? 280
-              setFlyoutBtnLeft(toolboxW + flyoutW - 28)
+              // flyout 콘텐츠 우측 끝: 스크롤바(15px) + 버튼(20px) + 여백(6px) 제외
+              setFlyoutBtnLeft(toolboxW + flyoutW - 15 - 20 - 6)
             }
           })
         }
