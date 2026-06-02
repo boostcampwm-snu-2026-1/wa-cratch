@@ -122,7 +122,7 @@ html, body { height: 100%; }
   display: flex; align-items: center; justify-content: center; gap: 8px;
   transition: opacity .2s;
 }
-.projCard:hover .projHover { opacity: 1; }
+.projCard:hover .projHover, .projHover.deleteConfirm { opacity: 1; }
 .phBtn {
   background: #fff; border-radius: 100px; font-family: var(--font-b);
   font-weight: 800; font-size: 12px; padding: 7px 14px; cursor: pointer;
@@ -131,6 +131,13 @@ html, body { height: 100%; }
 .phBtn.edit { color: var(--orange); }
 .phBtn.edit:hover { background: var(--orange); color: #fff; }
 .phBtn:hover { background: var(--teal); color: #fff; }
+.phBtn.delete:hover { background: #ef4444; color: #fff; }
+.deleteConfirm { flex-direction: column; gap: 6px; background: rgba(0,0,0,.55); }
+.deleteConfirmText { color: #fff; font-family: var(--font-b); font-weight: 800; font-size: 13px; }
+.phBtn.deleteYes { background: #ef4444; color: #fff; }
+.phBtn.deleteYes:hover { background: #dc2626; }
+.phBtn.deleteNo { background: #fff; color: var(--dark); }
+.phBtn.deleteNo:hover { background: var(--orange-pale); }
 
 .projInfo { padding: 12px 14px; }
 .projTitle { font-weight: 800; font-size: 14px; margin-bottom: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

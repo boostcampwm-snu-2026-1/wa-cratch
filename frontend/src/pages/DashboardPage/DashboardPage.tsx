@@ -1,12 +1,11 @@
 import { Link } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import s from './DashboardPage.module.css'
-import { getMyProjects } from '../../api/projects'
+import { getMyProjects, deleteProject, getLikedProjects } from '../../api/projects'
 import type { Project } from '../../api/projects'
 import { useAuth } from '../../context/AuthContext'
 import { useToast } from '../../hooks/useToast'
 import Toast from '../../components/Toast/Toast'
-import { getLikedProjects } from '../../api/projects'
 
 const THUMB_CLASSES = [s.pt1, s.pt2, s.pt3, s.pt4, s.pt5, s.pt6]
 
@@ -21,6 +20,7 @@ export default function DashboardPage() {
   const [tab, setTab] = useState<Tab>('projects')
   const [searchQuery, setSearchQuery] = useState('')
   const [likedProjects, setLikedProjects] = useState<Project[]>([])
+  const [deletingId, setDeletingId] = useState<string | null>(null)
 
   useEffect(() => {
     setLoading(true)
@@ -35,6 +35,18 @@ export default function DashboardPage() {
       getLikedProjects().then(setLikedProjects).catch(() => {})
     }
   }, [tab])
+
+  const handleDelete = async (id: string) => {
+    try {
+      await deleteProject(id)
+      setProjects(prev => prev.filter(p => p.id !== id))
+      showToast('프로젝트를 삭제했어요 🗑️', 'info')
+    } catch {
+      showToast('삭제에 실패했어요 😢', 'error')
+    } finally {
+      setDeletingId(null)
+    }
+  }
 
   const nickname = user?.nickname ?? '...'
   const avatar = user?.avatar ?? '🐱'
@@ -92,10 +104,19 @@ export default function DashboardPage() {
                   <div key={p.id} className={s.projCard}>
                     <div className={`${s.projThumb} ${THUMB_CLASSES[index % 6]}`}>
                       {p.emoji}
-                      <div className={s.projHover}>
-                        <Link to={`/editor/${p.id}`} className={`${s.phBtn} ${s.edit}`}>✏️ 편집</Link>
-                        <Link to={`/play/${p.id}`}   className={s.phBtn}>▶ 실행</Link>
-                      </div>
+                      {deletingId === p.id ? (
+                        <div className={`${s.projHover} ${s.deleteConfirm}`}>
+                          <span className={s.deleteConfirmText}>삭제할까요?</span>
+                          <button className={`${s.phBtn} ${s.deleteYes}`} onClick={() => handleDelete(p.id)}>✓ 네</button>
+                          <button className={`${s.phBtn} ${s.deleteNo}`} onClick={() => setDeletingId(null)}>✗ 아니요</button>
+                        </div>
+                      ) : (
+                        <div className={s.projHover}>
+                          <Link to={`/editor/${p.id}`} className={`${s.phBtn} ${s.edit}`}>✏️ 편집</Link>
+                          <Link to={`/play/${p.id}`}   className={s.phBtn}>▶ 실행</Link>
+                          <button className={`${s.phBtn} ${s.delete}`} onClick={() => setDeletingId(p.id)}>🗑️</button>
+                        </div>
+                      )}
                     </div>
                     <div className={s.projInfo}>
                       <div className={s.projTitle}>{p.title}</div>
