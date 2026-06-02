@@ -6,6 +6,7 @@ import { useToast } from '../../hooks/useToast'
 import Toast from '../../components/Toast/Toast'
 import ShareModal from '../../components/ShareModal/ShareModal'
 import { getProject, getProjects, type Project } from '../../api/projects'
+import { toggleLike } from '../../api/likes'
 import { useAuth } from '../../context/AuthContext'
 import { SpriteRuntime, defaultSpriteState, renderStage, getSpriteImageExport } from '../EditorPage/spriteRuntime'
 import { registerBlocks } from '../EditorPage/blockDefs'
@@ -164,9 +165,21 @@ export default function PlayPage() {
           <div className={s.stageActions}>
             <button
               className={`${s.actionBtn} ${s.abLike} ${isLiked ? s.liked : ''}`}
-              onClick={() => {
-                setIsLiked(prev => !prev)
-                setLikeCount(prev => isLiked ? prev - 1 : prev + 1)
+              onClick={async () => {
+                const newLiked = !isLiked
+                setIsLiked(newLiked)
+                setLikeCount(prev => newLiked ? prev + 1 : prev - 1)
+                if (id && user) {
+                  try {
+                    const result = await toggleLike(id)
+                    setLikeCount(result.likes)
+                    setIsLiked(result.liked)
+                  } catch {
+                    // revert on failure
+                    setIsLiked(!newLiked)
+                    setLikeCount(prev => newLiked ? prev - 1 : prev + 1)
+                  }
+                }
               }}
             >
               {isLiked ? '❤️' : '🤍'} 좋아요 <span className={s.abCount}>{likeCount.toLocaleString()}</span>
@@ -192,7 +205,7 @@ export default function PlayPage() {
               ))}
             </div>
             <div className={s.infoStats}>
-              <div className={s.infoStat}><span className={s.infoStatN}>{(project?.likes || 0).toLocaleString()}</span><span className={s.infoStatL}>❤️ 좋아요</span></div>
+              <div className={s.infoStat}><span className={s.infoStatN}>{likeCount.toLocaleString()}</span><span className={s.infoStatL}>❤️ 좋아요</span></div>
               <div className={s.infoStat}><span className={s.infoStatN}>{(project?.views || 0).toLocaleString()}</span><span className={s.infoStatL}>👁️ 조회</span></div>
             </div>
           </div>
