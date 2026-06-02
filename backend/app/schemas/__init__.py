@@ -95,6 +95,33 @@ class ActivityResponse(BaseModel):
     time: str = Field(..., description="Activity timestamp (ISO format or relative time)")
 
 
+# ============================================================================
+# Like Response Schema
+# ============================================================================
+
+class LikeResponse(BaseModel):
+    """Like toggle response"""
+    liked: bool = Field(..., description="Whether the project is now liked by the user")
+    likes: int = Field(..., description="Updated total like count for the project")
+
+
+# ============================================================================
+# Follow Response Schemas
+# ============================================================================
+
+class FollowResponse(BaseModel):
+    """Follow toggle response"""
+    following: bool = Field(..., description="Whether the current user is now following the target user")
+
+
+class FollowingUserResponse(BaseModel):
+    """User in the following list"""
+    id: str = Field(..., description="User ID")
+    nickname: str = Field(..., description="Display nickname")
+    avatar: str = Field(..., description="Avatar URL or emoji")
+    projectCount: int = Field(..., description="Number of published projects")
+
+
 __all__ = [
     "RegisterRequest",
     "LoginRequest",
@@ -104,4 +131,7 @@ __all__ = [
     "ProjectUpdateRequest",
     "ProjectResponse",
     "ActivityResponse",
+    "LikeResponse",
+    "FollowResponse",
+    "FollowingUserResponse",
 ]
