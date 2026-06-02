@@ -59,7 +59,10 @@ async def create_project(
 
 
 @router.get("/{project_id}", response_model=ProjectResponse)
-async def get_project(project_id: str, db: Session = Depends(get_db)) -> ProjectResponse:
+async def get_project(
+    project_id: str,
+    db: Session = Depends(get_db),
+) -> ProjectResponse:
     data = project_service.get_project(db, project_id)
     if data is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Project not found")

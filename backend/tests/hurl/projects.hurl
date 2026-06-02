@@ -55,7 +55,7 @@ jsonpath "$.id" isString
 jsonpath "$.title" == "테스트 프로젝트"
 
 
-# GET /projects/{id} — 프로젝트 상세
+# GET /projects/{id} — 인증 없이 누구나 조회 가능
 GET {{base_url}}/projects/{{project_id}}
 
 HTTP 200
@@ -64,7 +64,7 @@ jsonpath "$.title" isString
 jsonpath "$.author" isString
 
 
-# PUT /projects/{id} — 프로젝트 수정
+# PUT /projects/{id} — 제목 수정
 PUT {{base_url}}/projects/{{project_id}}
 Authorization: Bearer {{token}}
 Content-Type: application/json

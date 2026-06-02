@@ -40,7 +40,6 @@ class UserResponse(BaseModel):
     nickname: str = Field(..., description="Display nickname")
     avatar: str = Field(..., description="Avatar URL or emoji")
     projectCount: int = Field(..., description="Number of projects created")
-    followers: int = Field(..., description="Number of followers")
     totalLikes: int = Field(..., description="Total likes received")
 
 
@@ -62,7 +61,6 @@ class ProjectUpdateRequest(BaseModel):
     emoji: Optional[str] = Field(default=None, description="Project emoji")
     description: Optional[str] = Field(default=None, description="Project description")
     tags: Optional[list[str]] = Field(default=None, description="Project tags")
-    published: Optional[bool] = Field(default=None, description="Publication status")
     blocks_json: Optional[dict] = Field(default=None, description="Block configuration JSON")
 
 
@@ -74,7 +72,6 @@ class ProjectResponse(BaseModel):
     authorId: str = Field(..., description="Author user ID")
     emoji: str = Field(..., description="Project emoji")
     likes: int = Field(..., description="Number of likes")
-    views: int = Field(..., description="Number of views")
     published: bool = Field(..., description="Publication status")
     description: str = Field(..., description="Project description")
     tags: list[str] = Field(..., description="Project tags")
@@ -105,23 +102,6 @@ class LikeResponse(BaseModel):
     likes: int = Field(..., description="Updated total like count for the project")
 
 
-# ============================================================================
-# Follow Response Schemas
-# ============================================================================
-
-class FollowResponse(BaseModel):
-    """Follow toggle response"""
-    following: bool = Field(..., description="Whether the current user is now following the target user")
-
-
-class FollowingUserResponse(BaseModel):
-    """User in the following list"""
-    id: str = Field(..., description="User ID")
-    nickname: str = Field(..., description="Display nickname")
-    avatar: str = Field(..., description="Avatar URL or emoji")
-    projectCount: int = Field(..., description="Number of published projects")
-
-
 __all__ = [
     "RegisterRequest",
     "LoginRequest",
@@ -132,6 +112,4 @@ __all__ = [
     "ProjectResponse",
     "ActivityResponse",
     "LikeResponse",
-    "FollowResponse",
-    "FollowingUserResponse",
 ]

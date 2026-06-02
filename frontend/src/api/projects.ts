@@ -7,8 +7,6 @@ export type Project = {
   authorId: string
   emoji: string
   likes: number
-  views: number
-  published: boolean
   description: string
   tags: string[]
   blocks_json: Record<string, unknown>
@@ -50,7 +48,6 @@ export async function updateProject(
     emoji: string
     description: string
     tags: string[]
-    published: boolean
     blocks_json: Record<string, unknown>
   }>
 ): Promise<Project> {
@@ -60,4 +57,9 @@ export async function updateProject(
 
 export async function deleteProject(id: string): Promise<void> {
   await client.delete(`/projects/${id}`)
+}
+
+export async function getLikedProjects(): Promise<Project[]> {
+  const response = await client.get<Project[]>('/projects/liked')
+  return response.data
 }

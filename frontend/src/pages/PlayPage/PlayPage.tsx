@@ -122,7 +122,10 @@ export default function PlayPage() {
         </div>
         <div className={s.navSpacer}/>
         {user ? (
-          <Link to="/dashboard" className={`${s.btn} ${s.btnGhost}`} style={{ fontSize: 13 }}>{user.avatar} {user.nickname}</Link>
+          <Link to="/dashboard" className={s.navUser}>
+            <span className={s.navUserName}>{user.nickname}</span>
+            <div className={s.navUserAvatar}>{user.avatar}</div>
+          </Link>
         ) : (
           <Link to="/login" className={`${s.btn} ${s.btnGhost}`} style={{ fontSize: 13 }}>로그인</Link>
         )}
@@ -206,7 +209,6 @@ export default function PlayPage() {
             </div>
             <div className={s.infoStats}>
               <div className={s.infoStat}><span className={s.infoStatN}>{likeCount.toLocaleString()}</span><span className={s.infoStatL}>❤️ 좋아요</span></div>
-              <div className={s.infoStat}><span className={s.infoStatN}>{(project?.views || 0).toLocaleString()}</span><span className={s.infoStatL}>👁️ 조회</span></div>
             </div>
           </div>
         </div>

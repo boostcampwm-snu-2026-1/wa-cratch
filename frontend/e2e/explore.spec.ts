@@ -20,9 +20,9 @@ test('정렬 탭 클릭 시 활성 탭이 변경된다', async ({ page }) => {
   // Given
   await page.goto('/explore');
   // When
-  await page.getByRole('button', { name: /조회순/ }).click();
+  await page.getByRole('button', { name: /좋아요순/ }).click();
   // Then
-  await expect(page.getByRole('button', { name: /조회순/ })).toHaveClass(/active/);
+  await expect(page.getByRole('button', { name: /좋아요순/ })).toHaveClass(/active/);
   await expect(page.getByRole('button', { name: /최신순/ })).not.toHaveClass(/active/);
 });
 

@@ -17,7 +17,10 @@ export default function LandingPage() {
         </ul>
         <div className={s.navActions}>
           {user ? (
-            <Link to="/dashboard" className={`${s.btn} ${s.btnPrimary}`}>{user.avatar} {user.nickname}</Link>
+            <Link to="/dashboard" className={s.navUser}>
+              <span className={s.navUserName}>{user.nickname}</span>
+              <div className={s.navUserAvatar}>{user.avatar}</div>
+            </Link>
           ) : (
             <>
               <Link to="/login" className={`${s.btn} ${s.btnGhost}`}>로그인</Link>
@@ -217,8 +220,8 @@ export default function LandingPage() {
           <div className={s.step}>
             <span className={s.stepBadge}>3단계</span>
             <span className={s.stepIcon}>🌍</span>
-            <h3 className={s.stepTitle}>친구와 공유</h3>
-            <p className={s.stepDesc}>완성된 작품을 링크로<br/>친구에게 공유해요!</p>
+            <h3 className={s.stepTitle}>작품 감상하기</h3>
+            <p className={s.stepDesc}>탐색하기를 통해<br/>친구들의 작품을 감상해보세요!</p>
           </div>
         </div>
       </section>
@@ -227,7 +230,7 @@ export default function LandingPage() {
       <section className={s.ctaBg}>
         <h2 className={s.ctaTitle}>와냥이와 시작해요! 🧇</h2>
         <p className={s.ctaSub}>무료로 가입하고, 와냥이와 첫 번째 작품을 만들어봐요!</p>
-        <Link to="/login" className={s.btnWhite}>무료로 시작하기 🚀</Link>
+        <Link to={user ? '/editor/new' : '/login'} className={s.btnWhite}>무료로 시작하기 🚀</Link>
       </section>
 
       {/* ── FOOTER ── */}
