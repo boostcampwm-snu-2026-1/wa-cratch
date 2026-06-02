@@ -172,28 +172,82 @@
   position: relative;
 }
 
-/* Blockly 내부 툴박스 카테고리 스타일 오버라이드 */
+/* flyout 닫기 버튼 — 배경 없이 « 텍스트만, flyout 콘텐츠 우측 상단 */
+.flyoutCloseBtn {
+  position: absolute;
+  top: 8px;
+  z-index: 50;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: rgba(44, 24, 16, 0.35);
+  font-family: var(--font-b);
+  font-size: 14px;
+  font-weight: 900;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color .15s;
+  user-select: none;
+}
+.flyoutCloseBtn:hover {
+  color: rgba(44, 24, 16, 0.7);
+}
+
+/* Blockly v10 툴박스 카테고리 스타일 오버라이드 */
 :global(.blocklyToolboxDiv) {
   background: #FFF4EE !important;
   border-right: 3px solid #F0E0D6 !important;
   padding: 8px 0 !important;
 }
-:global(.blocklyTreeRow) {
-  padding: 8px 12px !important;
-  border-radius: 12px !important;
-  margin: 2px 8px !important;
+
+/* 카테고리 행 — Blockly v10 실제 셀렉터 */
+:global(.blocklyToolboxCategory) {
+  border-radius: 0 12px 12px 0 !important;
+  margin: 2px 8px 2px 0 !important;
+  padding: 0 !important;          /* Blockly의 padding:10px 0 제거 */
+  min-height: 36px !important;
+  display: flex !important;
+  align-items: center !important;
+  cursor: pointer !important;
+  transition: background-color .15s !important;
+  box-sizing: border-box !important;
+}
+:global(.blocklyToolboxCategory:hover:not(.blocklyToolboxSelected)) {
+  background-color: var(--orange-pale) !important;
+}
+/* 선택 상태 — JS가 category 색상을 inline !important로 직접 설정하므로 CSS는 Blockly 기본값만 덮음 */
+:global(.blocklyToolboxCategory.blocklyToolboxSelected) {
+  border-left-color: transparent !important;
+}
+
+/* 컨테이너 — flex item으로 가로 채움 */
+:global(.blocklyTreeRowContentContainer) {
+  flex: 1 !important;
+  padding: 0 12px 0 4px !important;
+  align-items: center !important;
+  min-width: 0 !important;
+}
+
+/* 카테고리 레이블 — 텍스트 오버플로 방지 */
+:global(.blocklyToolboxCategoryLabel) {
   font-family: var(--font-b) !important;
   font-weight: 800 !important;
   font-size: 13px !important;
-  cursor: pointer !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  max-width: 100% !important;
+  color: var(--dark) !important;
 }
-:global(.blocklyTreeRow:hover) {
-  background: var(--orange-pale) !important;
-}
-:global(.blocklyTreeSelected) {
-  background: var(--orange) !important;
+:global(.blocklyToolboxCategory.blocklyToolboxSelected .blocklyToolboxCategoryLabel) {
   color: #fff !important;
 }
+
 :global(.blocklyToolboxContents) {
   padding: 4px !important;
 }
