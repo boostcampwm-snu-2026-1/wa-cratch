@@ -6,8 +6,11 @@ import type { Project } from '../../api/projects'
 import { useAuth } from '../../context/AuthContext'
 import { useToast } from '../../hooks/useToast'
 import Toast from '../../components/Toast/Toast'
+import { getFollowing, getLikedProjects, type FollowingUser } from '../../api/follows'
 
 const THUMB_CLASSES = [s.pt1, s.pt2, s.pt3, s.pt4, s.pt5, s.pt6]
+
+type Tab = 'projects' | 'liked' | 'following'
 
 export default function DashboardPage() {
   const { toastVisible, toastMessage, toastType, showToast } = useToast()
@@ -15,6 +18,9 @@ export default function DashboardPage() {
 
   const [projects, setProjects] = useState<Project[]>([])
   const [loading, setLoading] = useState(true)
+  const [tab, setTab] = useState<Tab>('projects')
+  const [likedProjects, setLikedProjects] = useState<Project[]>([])
+  const [followingUsers, setFollowingUsers] = useState<FollowingUser[]>([])
 
   useEffect(() => {
     setLoading(true)
@@ -23,6 +29,14 @@ export default function DashboardPage() {
       .catch(() => {})
       .finally(() => setLoading(false))
   }, [])
+
+  useEffect(() => {
+    if (tab === 'liked') {
+      getLikedProjects().then(setLikedProjects).catch(() => {})
+    } else if (tab === 'following') {
+      getFollowing().then(setFollowingUsers).catch(() => {})
+    }
+  }, [tab])
 
   const nickname = user?.nickname ?? '...'
   const avatar = user?.avatar ?? '🐱'
@@ -51,10 +65,10 @@ export default function DashboardPage() {
           </div>
           <div className={s.sbSection}>
             <div className={s.sbSectionTitle}>나의 공간</div>
-            <Link to="/dashboard" className={`${s.sbLink} ${s.active}`}>🏠 내 프로젝트</Link>
+            <Link to="/dashboard" className={`${s.sbLink} ${tab === 'projects' ? s.active : ''}`} onClick={() => setTab('projects')}>🏠 내 프로젝트</Link>
             <Link to="/explore"   className={s.sbLink}>🔍 탐색하기</Link>
-            <a href="#"           className={s.sbLink}>❤️ 좋아요한 작품</a>
-            <a href="#"           className={s.sbLink}>👥 팔로잉</a>
+            <a href="#" className={`${s.sbLink} ${tab === 'liked' ? s.active : ''}`} onClick={(e) => { e.preventDefault(); setTab('liked') }}>❤️ 좋아요한 작품</a>
+            <a href="#" className={`${s.sbLink} ${tab === 'following' ? s.active : ''}`} onClick={(e) => { e.preventDefault(); setTab('following') }}>👥 팔로잉</a>
           </div>
           <div className={s.sbSection}>
             <div className={s.sbSectionTitle}>계정</div>
@@ -73,41 +87,104 @@ export default function DashboardPage() {
             <div className={s.welcomeMascot}>{avatar}</div>
           </div>
 
-          <div className={s.sectionHeader}>
-            <h2 className={s.sectionTitle}>🎮 내 프로젝트</h2>
-            <a href="#" className={s.seeAll}>전체 보기 →</a>
-          </div>
-
-          <div className={s.projGrid}>
-            <Link to="/editor/new" className={s.projNew}>
-              <div className={s.pnIcon}>+</div>
-              <div className={s.pnText}>새 프로젝트 만들기</div>
-            </Link>
-            {loading ? null : projects.map((p, index) => (
-              <div key={p.id} className={s.projCard}>
-                <div className={`${s.projThumb} ${THUMB_CLASSES[index % 6]}`}>
-                  {p.emoji}
-                  <div className={s.projHover}>
-                    <Link to={`/editor/${p.id}`} className={`${s.phBtn} ${s.edit}`}>✏️ 편집</Link>
-                    <Link to={`/play/${p.id}`}   className={s.phBtn}>▶ 실행</Link>
-                  </div>
-                </div>
-                <span className={`${s.statusBadge} ${p.published ? s.sbPublished : s.sbDraft}`}>
-                  {p.published ? '공개' : '비공개'}
-                </span>
-                <div className={s.projInfo}>
-                  <div className={s.projTitle}>{p.title}</div>
-                  <div className={s.projMeta}>
-                    <span className={s.projDate}>{p.views > 0 ? `${p.views} views` : '비공개'}</span>
-                    <div className={s.projStats}>
-                      <span className={s.projStat}>❤️ {p.likes}</span>
-                      <span className={s.projStat}>👁️ {p.views}</span>
+          {tab === 'projects' && (
+            <>
+              <div className={s.sectionHeader}>
+                <h2 className={s.sectionTitle}>🎮 내 프로젝트</h2>
+                <a href="#" className={s.seeAll}>전체 보기 →</a>
+              </div>
+              <div className={s.projGrid}>
+                <Link to="/editor/new" className={s.projNew}>
+                  <div className={s.pnIcon}>+</div>
+                  <div className={s.pnText}>새 프로젝트 만들기</div>
+                </Link>
+                {loading ? null : projects.map((p, index) => (
+                  <div key={p.id} className={s.projCard}>
+                    <div className={`${s.projThumb} ${THUMB_CLASSES[index % 6]}`}>
+                      {p.emoji}
+                      <div className={s.projHover}>
+                        <Link to={`/editor/${p.id}`} className={`${s.phBtn} ${s.edit}`}>✏️ 편집</Link>
+                        <Link to={`/play/${p.id}`}   className={s.phBtn}>▶ 실행</Link>
+                      </div>
+                    </div>
+                    <span className={`${s.statusBadge} ${p.published ? s.sbPublished : s.sbDraft}`}>
+                      {p.published ? '공개' : '비공개'}
+                    </span>
+                    <div className={s.projInfo}>
+                      <div className={s.projTitle}>{p.title}</div>
+                      <div className={s.projMeta}>
+                        <span className={s.projDate}>{p.views > 0 ? `${p.views} views` : '비공개'}</span>
+                        <div className={s.projStats}>
+                          <span className={s.projStat}>❤️ {p.likes}</span>
+                          <span className={s.projStat}>👁️ {p.views}</span>
+                        </div>
+                      </div>
                     </div>
                   </div>
-                </div>
+                ))}
               </div>
-            ))}
-          </div>
+            </>
+          )}
+
+          {tab === 'liked' && (
+            <>
+              <div className={s.sectionHeader}>
+                <h2 className={s.sectionTitle}>❤️ 좋아요한 작품</h2>
+              </div>
+              <div className={s.projGrid}>
+                {likedProjects.length === 0 ? (
+                  <div style={{ color: 'var(--color-text-muted, #888)', padding: '2rem' }}>
+                    아직 좋아요한 작품이 없어요 🐾
+                  </div>
+                ) : likedProjects.map((p, index) => (
+                  <div key={p.id} className={s.projCard}>
+                    <div className={`${s.projThumb} ${THUMB_CLASSES[index % 6]}`}>
+                      {p.emoji}
+                      <div className={s.projHover}>
+                        <Link to={`/play/${p.id}`} className={s.phBtn}>▶ 실행</Link>
+                      </div>
+                    </div>
+                    <div className={s.projInfo}>
+                      <div className={s.projTitle}>{p.title}</div>
+                      <div className={s.projMeta}>
+                        <span className={s.projDate}>{p.author}</span>
+                        <div className={s.projStats}>
+                          <span className={s.projStat}>❤️ {p.likes}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+
+          {tab === 'following' && (
+            <>
+              <div className={s.sectionHeader}>
+                <h2 className={s.sectionTitle}>👥 팔로잉</h2>
+              </div>
+              <div className={s.projGrid}>
+                {followingUsers.length === 0 ? (
+                  <div style={{ color: 'var(--color-text-muted, #888)', padding: '2rem' }}>
+                    아직 팔로우한 유저가 없어요 🐱
+                  </div>
+                ) : followingUsers.map((u) => (
+                  <div key={u.id} className={s.projCard}>
+                    <div className={`${s.projThumb} ${THUMB_CLASSES[0]}`} style={{ fontSize: '2rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      {u.avatar}
+                    </div>
+                    <div className={s.projInfo}>
+                      <div className={s.projTitle}>{u.nickname}</div>
+                      <div className={s.projMeta}>
+                        <span className={s.projDate}>작품 {u.projectCount}개</span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
 
         </div>
       </div>
