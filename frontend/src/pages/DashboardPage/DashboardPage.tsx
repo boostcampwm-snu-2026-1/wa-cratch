@@ -19,6 +19,7 @@ export default function DashboardPage() {
   const [projects, setProjects] = useState<Project[]>([])
   const [loading, setLoading] = useState(true)
   const [tab, setTab] = useState<Tab>('projects')
+  const [searchQuery, setSearchQuery] = useState('')
   const [likedProjects, setLikedProjects] = useState<Project[]>([])
   const [followingUsers, setFollowingUsers] = useState<FollowingUser[]>([])
 
@@ -50,7 +51,6 @@ export default function DashboardPage() {
           <span className={s.tnLogoText}>Wa<em>Cratch</em></span>
         </Link>
         <div className={s.tnSpacer}/>
-        <div className={s.tnSearch}><input type="text" placeholder="내 프로젝트 검색..."/></div>
       </div>
 
       {/* BODY */}
@@ -72,30 +72,27 @@ export default function DashboardPage() {
             <div className={s.sbSectionTitle}>계정</div>
             <Link to="/" className={s.sbLink} onClick={() => { logout(); showToast('로그아웃 됐어요 👋', 'info') }}>🚪 로그아웃</Link>
           </div>
-          <Link to="/editor/new" className={s.sbNewBtn}>+ 새 프로젝트</Link>
         </div>
 
         {/* CONTENT */}
         <div className={s.content}>
-          <div className={s.welcome}>
-            <div>
-              <div className={s.welcomeGreeting}>안녕, {nickname}! {avatar}</div>
-              <div className={s.welcomeSub}>오늘도 멋진 작품을 만들어볼까요?</div>
-            </div>
-            <div className={s.welcomeMascot}>{avatar}</div>
-          </div>
-
           {tab === 'projects' && (
             <>
               <div className={s.sectionHeader}>
                 <h2 className={s.sectionTitle}>🎮 내 프로젝트</h2>
+                <div className={s.sectionSearch}>
+                  <input
+                    type="text"
+                    placeholder="내 프로젝트 검색..."
+                    value={searchQuery}
+                    onChange={e => setSearchQuery(e.target.value)}
+                  />
+                </div>
               </div>
               <div className={s.projGrid}>
-                <Link to="/editor/new" className={s.projNew}>
-                  <div className={s.pnIcon}>+</div>
-                  <div className={s.pnText}>새 프로젝트 만들기</div>
-                </Link>
-                {loading ? null : projects.map((p, index) => (
+                {loading ? null : projects.filter(p =>
+                  p.title.toLowerCase().includes(searchQuery.toLowerCase())
+                ).map((p, index) => (
                   <div key={p.id} className={s.projCard}>
                     <div className={`${s.projThumb} ${THUMB_CLASSES[index % 6]}`}>
                       {p.emoji}
