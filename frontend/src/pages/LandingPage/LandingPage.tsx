@@ -220,8 +220,8 @@ export default function LandingPage() {
           <div className={s.step}>
             <span className={s.stepBadge}>3단계</span>
             <span className={s.stepIcon}>🌍</span>
-            <h3 className={s.stepTitle}>친구와 공유</h3>
-            <p className={s.stepDesc}>완성된 작품을 링크로<br/>친구에게 공유해요!</p>
+            <h3 className={s.stepTitle}>작품 감상하기</h3>
+            <p className={s.stepDesc}>탐색하기를 통해<br/>친구들의 작품을 감상해보세요!</p>
           </div>
         </div>
       </section>
