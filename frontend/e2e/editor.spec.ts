@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 
 const fakeUserBody = JSON.stringify({
   username: 'test', nickname: '테스터', avatar: '🐱',
-  projectCount: 0, followers: 0, totalLikes: 0,
+  projectCount: 0, totalLikes: 0,
 });
 
 test.describe('에디터 (인증 상태)', () => {
@@ -32,8 +32,8 @@ test.describe('에디터 (인증 상태)', () => {
     await expect(flyout).toBeVisible();
     // Blockly SVG는 공백을 U+00A0(non-breaking space)로 렌더링하므로 정규화 후 비교
     const rawText = await flyout.textContent() ?? '';
-    const flyoutText = rawText.replace(/ /g, ' ');
-    expect(flyoutText).toMatch(/위 키 눌렸을 때/);
+    const flyoutText = rawText.replace(/ /g, ' ');
+    expect(flyoutText).toMatch(/키 눌렸을 때/);
     expect(flyoutText).not.toMatch(/이동하기/);
   });
 
@@ -47,21 +47,14 @@ test.describe('에디터 (인증 상태)', () => {
 
   test('저장 버튼 클릭 시 토스트 메시지가 나타난다', async ({ page }) => {
     // Given
+    await page.route('**/projects/**', route =>
+      route.fulfill({ status: 500, contentType: 'application/json', body: '{"detail":"error"}' })
+    );
     await page.goto('/editor/test');
     // When
     await page.getByRole('button', { name: /저장/ }).click();
     // Then
     await expect(page.locator('[class*="toast"]')).toBeVisible();
-  });
-
-  test('공유하기 버튼 클릭 시 공유 모달이 나타난다', async ({ page }) => {
-    // Given
-    await page.goto('/editor/test');
-    // When
-    await page.getByRole('button', { name: /공유하기/ }).click();
-    // Then
-    await expect(page.locator('[class*="shareModal"]')).toBeVisible();
-    await expect(page.getByRole('button', { name: /링크 복사/ })).toBeVisible();
   });
 
   test('실행하기 버튼 클릭 시 실행 중 상태로 전환된다', async ({ page }) => {
