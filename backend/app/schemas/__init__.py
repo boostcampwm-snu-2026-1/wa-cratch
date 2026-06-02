@@ -95,6 +95,16 @@ class ActivityResponse(BaseModel):
     time: str = Field(..., description="Activity timestamp (ISO format or relative time)")
 
 
+# ============================================================================
+# Like Response Schema
+# ============================================================================
+
+class LikeResponse(BaseModel):
+    """Like toggle response"""
+    liked: bool = Field(..., description="Whether the project is now liked by the user")
+    likes: int = Field(..., description="Updated total like count for the project")
+
+
 __all__ = [
     "RegisterRequest",
     "LoginRequest",
@@ -104,4 +114,5 @@ __all__ = [
     "ProjectUpdateRequest",
     "ProjectResponse",
     "ActivityResponse",
+    "LikeResponse",
 ]
