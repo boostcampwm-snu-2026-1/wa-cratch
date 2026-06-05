@@ -81,8 +81,14 @@ export function useRealtimeVoice(
         dc.send(JSON.stringify({
           type: 'session.update',
           session: {
+            type: 'realtime',
+            model: 'gpt-realtime-2',
+            output_modalities: ['audio', 'text'],
             instructions: SYSTEM_PROMPT,
-            input_audio_transcription: { model: 'whisper-1' },
+            audio: {
+              input: { turn_detection: { type: 'semantic_vad' } },
+              output: { voice: 'shimmer' },
+            },
             tools: TOOL_DECLARATIONS,
             tool_choice: 'auto',
           },
@@ -113,10 +119,10 @@ export function useRealtimeVoice(
         if (event.type === 'conversation.item.input_audio_transcription.completed') {
           addTranscript('user', (event.transcript as string) ?? '')
         }
-        if (event.type === 'response.audio_transcript.done') {
+        if (event.type === 'response.output_audio_transcript.done') {
           addTranscript('model', (event.transcript as string) ?? '')
         }
-        if (event.type === 'response.audio.delta') setVoiceState('speaking')
+        if (event.type === 'response.output_audio_transcript.delta') setVoiceState('speaking')
         if (event.type === 'response.done') setVoiceState('listening')
       }
 
