@@ -78,25 +78,32 @@ export function useRealtimeVoice(
 
       dc.onopen = () => {
         setVoiceState('listening')
-        dc.send(JSON.stringify({
+        const sessionUpdatePayload = {
           type: 'session.update',
           session: {
             type: 'realtime',
-            model: 'gpt-realtime-2',
-            output_modalities: ['audio', 'text'],
             instructions: SYSTEM_PROMPT,
-            audio: {
-              input: { turn_detection: { type: 'semantic_vad' } },
-              output: { voice: 'shimmer' },
-            },
+            input_audio_transcription: { model: 'whisper-1' },
             tools: TOOL_DECLARATIONS,
             tool_choice: 'auto',
           },
-        }))
+        }
+        console.log('[VoiceAgent] sending session.update:', JSON.stringify(sessionUpdatePayload, null, 2))
+        dc.send(JSON.stringify(sessionUpdatePayload))
       }
 
       dc.onmessage = (e: MessageEvent) => {
         const event = JSON.parse(e.data as string)
+        console.log('[VoiceAgent] server event:', event.type, event)
+
+        if (event.type === 'session.updated') {
+          console.log('[VoiceAgent] session.updated — instructions:', event.session?.instructions?.slice(0, 80))
+          console.log('[VoiceAgent] session.updated — tools:', event.session?.tools)
+        }
+
+        if (event.type === 'error') {
+          console.error('[VoiceAgent] server error:', event.error)
+        }
 
         if (event.type === 'response.function_call_arguments.done') {
           const result = handleToolCall(
@@ -117,12 +124,14 @@ export function useRealtimeVoice(
         }
 
         if (event.type === 'conversation.item.input_audio_transcription.completed') {
+          console.log('[VoiceAgent] user transcript:', event.transcript)
           addTranscript('user', (event.transcript as string) ?? '')
         }
-        if (event.type === 'response.output_audio_transcript.done') {
+        if (event.type === 'response.audio_transcript.done') {
+          console.log('[VoiceAgent] model transcript:', event.transcript)
           addTranscript('model', (event.transcript as string) ?? '')
         }
-        if (event.type === 'response.output_audio_transcript.delta') setVoiceState('speaking')
+        if (event.type === 'response.audio.delta') setVoiceState('speaking')
         if (event.type === 'response.done') setVoiceState('listening')
       }
 
