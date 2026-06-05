@@ -27,6 +27,12 @@ export function useRealtimeVoice(
 
   useEffect(() => { projectTitleRef.current = projectTitle }, [projectTitle])
 
+  useEffect(() => {
+    return () => { cleanup() }
+  // cleanup은 ref만 사용하므로 의존성 불필요
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   const addTranscript = useCallback((role: 'user' | 'model', text: string) => {
     if (!text.trim()) return
     setTranscripts(prev => [...prev, { role, text, ts: Date.now() }])
@@ -127,7 +133,7 @@ export function useRealtimeVoice(
 
       // 7. OpenAI SDP answer
       const sdpRes = await fetch(
-        'https://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2024-12-17',
+        'https://api.openai.com/v1/realtime/calls',
         {
           method: 'POST',
           body: offer.sdp,
