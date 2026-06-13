@@ -1,14 +1,18 @@
 import { useState, useEffect, type RefObject } from 'react'
-import { renderStage, getSpriteImageExport, SPRITE_LIBRARY } from './spriteRuntime'
-import type { SpriteState, Background } from './spriteRuntime'
+import { getSpriteImageExport, SPRITE_LIBRARY } from './spriteRuntime'
+import type { SpriteEntity, Background } from './spriteRuntime'
 import s from './StageCanvas.module.css'
 
 interface Props {
-  state: SpriteState
+  entities: SpriteEntity[]
+  activeEntityId: string
   selectedBg: Background
-  onBgChange: (bg: Background) => void
-  onSpriteChange: (id: string) => void
   canvasRef: RefObject<HTMLCanvasElement | null>
+  onSelectEntity: (id: string) => void
+  onAddSprite: (spriteId: string) => void
+  onDeleteEntity: (id: string) => void
+  onRenameEntity: (id: string, name: string) => void
+  onBgChange: (bg: Background) => void
 }
 
 const BG_OPTIONS: { key: Background; label: string }[] = [
@@ -20,30 +24,50 @@ const BG_OPTIONS: { key: Background; label: string }[] = [
   { key: 'forest', label: '숲' },
 ]
 
-export default function StageCanvas({ state, selectedBg, onBgChange, onSpriteChange, canvasRef }: Props) {
+const LIBRARY_CATEGORIES = [
+  { key: 'all', label: '전체' },
+  { key: 'basic', label: '기본' },
+  { key: 'breakout', label: '벽돌깨기' },
+  { key: 'platformer', label: '플랫포머' },
+  { key: 'shooter', label: '슈팅' },
+  { key: 'janggi', label: '장기' },
+  { key: 'common', label: '공통' },
+] as const
+
+type LibCategory = (typeof LIBRARY_CATEGORIES)[number]['key']
+
+export default function StageCanvas({
+  entities,
+  activeEntityId,
+  selectedBg,
+  canvasRef,
+  onSelectEntity,
+  onAddSprite,
+  onDeleteEntity,
+  onRenameEntity,
+  onBgChange,
+}: Props) {
   const [libraryOpen, setLibraryOpen] = useState(false)
+  const [libCategory, setLibCategory] = useState<LibCategory>('all')
   const [spriteImgUrls, setSpriteImgUrls] = useState<Record<string, string>>({})
+  const [editingNameId, setEditingNameId] = useState<string | null>(null)
+  const [editingName, setEditingName] = useState('')
 
   // 스프라이트 라이브러리 이미지 프리로드
   useEffect(() => {
-    const entries = Object.keys(SPRITE_LIBRARY)
+    const ids = Object.keys(SPRITE_LIBRARY)
     Promise.all(
-      entries.map((id) => getSpriteImageExport(id).then((img) => [id, img.src] as const))
+      ids.map((id) => getSpriteImageExport(id).then((img) => [id, img.src] as const))
     ).then((pairs) => {
       setSpriteImgUrls(Object.fromEntries(pairs))
     })
   }, [])
 
-  // 캔버스 렌더링 — spriteId 포함하여 올바른 이미지 사용
-  useEffect(() => {
-    const canvas = canvasRef.current
-    if (!canvas) return
-    getSpriteImageExport(state.spriteId).then((img) => {
-      renderStage(canvas, { ...state, bg: selectedBg }, img)
-    })
-  }, [state, selectedBg, canvasRef])
+  const activeEntity = entities.find((e) => e.id === activeEntityId)
 
-  const activeEntry = SPRITE_LIBRARY[state.spriteId] ?? SPRITE_LIBRARY.cat
+  const filteredEntries = Object.entries(SPRITE_LIBRARY).filter(([, entry]) =>
+    libCategory === 'all' || entry.category === libCategory
+  )
 
   return (
     <div className={s.stagePanel}>
@@ -65,8 +89,8 @@ export default function StageCanvas({ state, selectedBg, onBgChange, onSpriteCha
       </div>
 
       <div className={s.stageCoords}>
-        <span className={s.coordChip}>x: {Math.round(state.x)}</span>
-        <span className={s.coordChip}>y: {Math.round(state.y)}</span>
+        <span className={s.coordChip}>x: {Math.round(activeEntity?.state.x ?? 0)}</span>
+        <span className={s.coordChip}>y: {Math.round(activeEntity?.state.y ?? 0)}</span>
       </div>
 
       <div className={s.spriteSection}>
@@ -75,13 +99,44 @@ export default function StageCanvas({ state, selectedBg, onBgChange, onSpriteCha
           <button className={s.addSprite} title="스프라이트 추가" onClick={() => setLibraryOpen(true)}>+</button>
         </div>
         <div className={s.spriteList}>
-          <div className={`${s.spriteThumb} ${s.active}`}>
-            {spriteImgUrls[state.spriteId]
-              ? <img src={spriteImgUrls[state.spriteId]} className={s.sIcon} alt={activeEntry.name} />
-              : <span className={s.sIcon}>🐾</span>
-            }
-            <span className={s.sName}>{activeEntry.name}</span>
-          </div>
+          {entities.map((entity) => {
+            const entry = SPRITE_LIBRARY[entity.state.spriteId] ?? SPRITE_LIBRARY.cat
+            return (
+              <div
+                key={entity.id}
+                className={`${s.spriteThumb} ${entity.id === activeEntityId ? s.active : ''}`}
+                onClick={() => onSelectEntity(entity.id)}
+              >
+                {entities.length > 1 && (
+                  <button
+                    className={s.deleteThumb}
+                    onClick={(e) => { e.stopPropagation(); onDeleteEntity(entity.id) }}
+                    title="삭제"
+                  >×</button>
+                )}
+                {spriteImgUrls[entity.state.spriteId]
+                  ? <img src={spriteImgUrls[entity.state.spriteId]} className={s.sIcon} alt={entry.name} />
+                  : <span className={s.sIcon}>🐾</span>
+                }
+                {editingNameId === entity.id ? (
+                  <input
+                    className={s.nameInput}
+                    value={editingName}
+                    autoFocus
+                    onChange={(e) => setEditingName(e.target.value)}
+                    onBlur={() => { onRenameEntity(entity.id, editingName.trim() || entity.name); setEditingNameId(null) }}
+                    onKeyDown={(e) => { if (e.key === 'Enter') { onRenameEntity(entity.id, editingName.trim() || entity.name); setEditingNameId(null) } }}
+                    onClick={(e) => e.stopPropagation()}
+                  />
+                ) : (
+                  <span
+                    className={s.sName}
+                    onDoubleClick={(e) => { e.stopPropagation(); setEditingNameId(entity.id); setEditingName(entity.name) }}
+                  >{entity.name}</span>
+                )}
+              </div>
+            )
+          })}
         </div>
 
         <div className={s.bgSectionHeader}>
@@ -110,12 +165,21 @@ export default function StageCanvas({ state, selectedBg, onBgChange, onSpriteCha
               <span className={s.libraryTitle}>🎨 스프라이트 선택</span>
               <button className={s.libraryClose} onClick={() => setLibraryOpen(false)}>✕</button>
             </div>
+            <div className={s.libraryTabs}>
+              {LIBRARY_CATEGORIES.map(({ key, label }) => (
+                <button
+                  key={key}
+                  className={`${s.libraryTab} ${libCategory === key ? s.libraryTabActive : ''}`}
+                  onClick={() => setLibCategory(key)}
+                >{label}</button>
+              ))}
+            </div>
             <div className={s.libraryGrid}>
-              {Object.entries(SPRITE_LIBRARY).map(([id, entry]) => (
+              {filteredEntries.map(([id, entry]) => (
                 <button
                   key={id}
-                  className={`${s.libraryItem} ${state.spriteId === id ? s.libraryItemActive : ''}`}
-                  onClick={() => { onSpriteChange(id); setLibraryOpen(false) }}
+                  className={s.libraryItem}
+                  onClick={() => { onAddSprite(id); setLibraryOpen(false) }}
                 >
                   {spriteImgUrls[id]
                     ? <img src={spriteImgUrls[id]} className={s.libraryImg} alt={entry.name} />

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import * as Blockly from 'blockly'
+import type * as BlocklyType from 'blockly'
 import s from './PlayPage.module.css'
 import { useToast } from '../../hooks/useToast'
 import Toast from '../../components/Toast/Toast'
@@ -8,7 +8,7 @@ import ShareModal from '../../components/ShareModal/ShareModal'
 import { getProject, getProjects, type Project } from '../../api/projects'
 import { toggleLike } from '../../api/likes'
 import { useAuth } from '../../context/AuthContext'
-import { SpriteRuntime, defaultSpriteState, renderStage, getSpriteImageExport } from '../EditorPage/spriteRuntime'
+import { GameEngine, defaultSpriteEntity, migrateProjectData, renderStage, getSpriteImageExport, type SpriteEntity } from '../EditorPage/spriteRuntime'
 import { registerBlocks } from '../EditorPage/blockDefs'
 
 registerBlocks()
@@ -26,21 +26,20 @@ export default function PlayPage() {
   const [shareOpen, setShareOpen] = useState(false)
 
   const canvasRef = useRef<HTMLCanvasElement>(null)
-  const workspaceDivRef = useRef<HTMLDivElement>(null)
-  const workspaceRef = useRef<Blockly.WorkspaceSvg | null>(null)
-  const runtimeRef = useRef<SpriteRuntime | null>(null)
-  const detachKeysRef = useRef<(() => void) | null>(null)
+  const engineRef = useRef<GameEngine | null>(null)
+  const entitiesRef = useRef<SpriteEntity[]>([defaultSpriteEntity()])
 
   // 초기 캔버스 렌더
   useEffect(() => {
     const canvas = canvasRef.current
     if (!canvas) return
-    getSpriteImageExport().then(img => {
-      renderStage(canvas, defaultSpriteState(), img)
+    const entity = defaultSpriteEntity()
+    getSpriteImageExport('cat').then(img => {
+      renderStage(canvas, [entity], new Map([['cat', img]]), 'sky')
     })
   }, [])
 
-  // 프로젝트 로드 + Blockly 워크스페이스 생성
+  // 프로젝트 로드
   useEffect(() => {
     if (!id) return
     getProject(id).then((data) => {
@@ -52,58 +51,62 @@ export default function PlayPage() {
         setAuthorProjects(all.filter(p => p.authorId === data.authorId && p.id !== data.id))
       }).catch(() => {})
 
-      // 숨김 Blockly 워크스페이스에 blocks_json 로드
-      const div = workspaceDivRef.current
-      if (!div) return
-      const ws = Blockly.inject(div, { readOnly: true })
-      workspaceRef.current = ws
-      if (data.blocks_json && Object.keys(data.blocks_json).length > 0) {
-        Blockly.serialization.workspaces.load(data.blocks_json, ws)
-      }
-    }).catch(() => {})
+      // Parse multi-sprite format
+      const { bg, sprites } = migrateProjectData(data.blocks_json ?? {})
+      entitiesRef.current = sprites
 
-    return () => {
-      workspaceRef.current?.dispose()
-      workspaceRef.current = null
-    }
+      // Render initial preview
+      const canvas = canvasRef.current
+      if (!canvas) return
+      const uniqueIds = [...new Set(sprites.map(e => e.state.spriteId))]
+      Promise.all(uniqueIds.map(sid => getSpriteImageExport(sid).then(img => [sid, img] as const)))
+        .then(pairs => {
+          renderStage(canvas, sprites, new Map(pairs), bg)
+        })
+    }).catch(() => {})
   }, [id])
 
   const handlePlay = useCallback(() => {
     const canvas = canvasRef.current
-    const ws = workspaceRef.current
-    if (!canvas || !ws) return
+    if (!canvas) return
 
-    runtimeRef.current?.stop()
-    detachKeysRef.current?.()
-
-    const initial = defaultSpriteState()
-    const runtime = new SpriteRuntime(canvas, initial)
-    runtimeRef.current = runtime
-    detachKeysRef.current = runtime.attachKeyListeners()
+    engineRef.current?.stop()
     setIsRunning(true)
 
-    runtime.run(ws).finally(() => {
+    const entities = entitiesRef.current
+    void (async () => {
+      const Blockly = await import('blockly')
+      const wsMap = new Map<string, BlocklyType.WorkspaceSvg>()
+      for (const entity of entities) {
+        const ws = new Blockly.Workspace() as unknown as BlocklyType.WorkspaceSvg
+        if (Object.keys(entity.workspaceData).length > 0) {
+          Blockly.serialization.workspaces.load(entity.workspaceData as Parameters<typeof Blockly.serialization.workspaces.load>[0], ws)
+        }
+        wsMap.set(entity.id, ws)
+      }
+
+      const engine = new GameEngine(canvas, [...entities], () => {})
+      engineRef.current = engine
+      await engine.run(wsMap)
       setIsRunning(false)
-    })
+    })()
   }, [])
 
   const handleStop = useCallback(() => {
-    runtimeRef.current?.stop()
-    detachKeysRef.current?.()
-    detachKeysRef.current = null
+    engineRef.current?.stop()
     setIsRunning(false)
-    // 초기 상태로 재렌더
+    // Re-render with original entities
     const canvas = canvasRef.current
-    if (canvas) {
-      getSpriteImageExport().then(img => renderStage(canvas, defaultSpriteState(), img))
-    }
+    if (!canvas) return
+    const entities = entitiesRef.current
+    const bg = entities[0]?.state.bg ?? 'sky'
+    const uniqueIds = [...new Set(entities.map(e => e.state.spriteId))]
+    Promise.all(uniqueIds.map(sid => getSpriteImageExport(sid).then(img => [sid, img] as const)))
+      .then(pairs => { renderStage(canvas, entities, new Map(pairs), bg) })
   }, [])
 
   useEffect(() => {
-    return () => {
-      runtimeRef.current?.stop()
-      detachKeysRef.current?.()
-    }
+    return () => { engineRef.current?.stop() }
   }, [])
 
   return (
@@ -131,9 +134,6 @@ export default function PlayPage() {
         )}
         <Link to={user ? '/editor/new' : '/login'} className={`${s.btn} ${s.btnPrimary}`} style={{ fontSize: 13 }}>+ 만들기</Link>
       </nav>
-
-      {/* 숨김 Blockly 워크스페이스 */}
-      <div ref={workspaceDivRef} style={{ position: 'fixed', left: -9999, top: -9999, width: 1, height: 1, overflow: 'hidden', pointerEvents: 'none' }} />
 
       <div className={s.main}>
         {/* LEFT: Stage + Info */}
