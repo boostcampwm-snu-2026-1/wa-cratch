@@ -1,4 +1,34 @@
 import type * as BlocklyType from 'blockly'
+import asteroidUrl from '../../assets/sprites/asteroid.svg?url'
+import brickGoldUrl from '../../assets/sprites/brick_gold.svg?url'
+import brickYellowUrl from '../../assets/sprites/brick_yellow.svg?url'
+import bulletUrl from '../../assets/sprites/bullet.svg?url'
+import coinUrl from '../../assets/sprites/coin.svg?url'
+import enemyShipUrl from '../../assets/sprites/enemy_ship.svg?url'
+import explosionUrl from '../../assets/sprites/explosion.svg?url'
+import flagUrl from '../../assets/sprites/flag.svg?url'
+import heartUrl from '../../assets/sprites/heart.svg?url'
+import janggiByongBUrl from '../../assets/sprites/janggi_byong_b.svg?url'
+import janggiChaBUrl from '../../assets/sprites/janggi_cha_b.svg?url'
+import janggiChaRUrl from '../../assets/sprites/janggi_cha_r.svg?url'
+import janggiHanBUrl from '../../assets/sprites/janggi_han_b.svg?url'
+import janggiJangRUrl from '../../assets/sprites/janggi_jang_r.svg?url'
+import janggiJolRUrl from '../../assets/sprites/janggi_jol_r.svg?url'
+import janggiMaBUrl from '../../assets/sprites/janggi_ma_b.svg?url'
+import janggiMaRUrl from '../../assets/sprites/janggi_ma_r.svg?url'
+import janggiPoBUrl from '../../assets/sprites/janggi_po_b.svg?url'
+import janggiPoRUrl from '../../assets/sprites/janggi_po_r.svg?url'
+import janggiSaBUrl from '../../assets/sprites/janggi_sa_b.svg?url'
+import janggiSaRUrl from '../../assets/sprites/janggi_sa_r.svg?url'
+import janggiSangBUrl from '../../assets/sprites/janggi_sang_b.svg?url'
+import janggiSangRUrl from '../../assets/sprites/janggi_sang_r.svg?url'
+import platformUrl from '../../assets/sprites/platform.svg?url'
+import platformStoneUrl from '../../assets/sprites/platform_stone.svg?url'
+import slimeUrl from '../../assets/sprites/slime.svg?url'
+import spaceshipUrl from '../../assets/sprites/spaceship.svg?url'
+import spikeUrl from '../../assets/sprites/spike.svg?url'
+import starUrl from '../../assets/sprites/star.svg?url'
+import trophyUrl from '../../assets/sprites/trophy.svg?url'
 
 export type Background = 'white' | 'sky' | 'night' | 'ocean' | 'space' | 'forest'
 
@@ -11,22 +41,64 @@ export interface SpriteState {
   speech: string | null
   bg: Background
   spriteId: string
+  vx: number
+  vy: number
 }
 
 const STAGE_W = 480
 const STAGE_H = 360
 
 export function defaultSpriteState(): SpriteState {
-  return { x: 0, y: -35, direction: 90, visible: true, size: 100, speech: null, bg: 'white', spriteId: 'cat' }
+  return { x: 0, y: -35, direction: 90, visible: true, size: 100, speech: null, bg: 'sky', spriteId: 'cat', vx: 0, vy: 0 }
+}
+
+export function defaultSpriteEntity(id = 'sprite_1', name = '와냥이', spriteId = 'cat'): SpriteEntity {
+  const state = defaultSpriteState()
+  state.spriteId = spriteId
+  return { id, name, state, workspaceData: {} }
+}
+
+export function migrateProjectData(blocksJson: Record<string, unknown>): { bg: Background; sprites: SpriteEntity[] } {
+  if (Array.isArray(blocksJson.sprites)) {
+    return {
+      bg: (blocksJson.bg as Background) ?? 'sky',
+      sprites: (blocksJson.sprites as SpriteEntity[]).map(s => ({
+        ...s,
+        state: { ...defaultSpriteState(), ...s.state },
+      })),
+    }
+  }
+  // Old single-sprite format: blocksJson IS the Blockly workspace data
+  const entity = defaultSpriteEntity('sprite_1', '와냥이', 'cat')
+  entity.workspaceData = blocksJson
+  return { bg: 'sky', sprites: [entity] }
 }
 
 // ── Canvas rendering ──────────────────────────────────────────────
 
-export interface SpriteEntry { name: string; svg: string }
+export interface SpriteEntry {
+  name: string
+  category: 'basic' | 'breakout' | 'platformer' | 'shooter' | 'janggi' | 'common'
+  svg?: string
+  png?: string
+  naturalW: number
+  naturalH: number
+}
+
+export interface SpriteEntity {
+  id: string
+  name: string
+  isClone?: boolean
+  state: SpriteState
+  workspaceData: Record<string, unknown>
+}
 
 export const SPRITE_LIBRARY: Record<string, SpriteEntry> = {
   cat: {
     name: '와냥이',
+    category: 'basic',
+    naturalW: 270,
+    naturalH: 342,
     svg: `<svg viewBox="-18 -18 306 378" fill="none" xmlns="http://www.w3.org/2000/svg">
   <path d="M198 258 Q248 228 244 186 Q240 152 222 163" stroke="#E8A818" stroke-width="26" fill="none" stroke-linecap="round"/>
   <path d="M198 258 Q248 228 244 186 Q240 152 222 163" stroke="#FFC947" stroke-width="16" fill="none" stroke-linecap="round"/>
@@ -61,6 +133,9 @@ export const SPRITE_LIBRARY: Record<string, SpriteEntry> = {
   },
   ball: {
     name: '공',
+    category: 'breakout',
+    naturalW: 100,
+    naturalH: 100,
     svg: `<svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
   <defs>
     <radialGradient id="ballGrad" cx="38%" cy="32%" r="62%">
@@ -77,6 +152,9 @@ export const SPRITE_LIBRARY: Record<string, SpriteEntry> = {
   },
   paddle: {
     name: '패들',
+    category: 'breakout',
+    naturalW: 200,
+    naturalH: 60,
     svg: `<svg viewBox="0 0 200 60" fill="none" xmlns="http://www.w3.org/2000/svg">
   <rect x="4" y="10" width="192" height="42" rx="21" fill="#CC3A0A"/>
   <rect x="2" y="6" width="192" height="42" rx="21" fill="#FF6B35"/>
@@ -86,6 +164,9 @@ export const SPRITE_LIBRARY: Record<string, SpriteEntry> = {
   },
   brick_red: {
     name: '빨간 벽돌',
+    category: 'breakout',
+    naturalW: 120,
+    naturalH: 52,
     svg: `<svg viewBox="0 0 120 52" fill="none" xmlns="http://www.w3.org/2000/svg">
   <rect x="2" y="6" width="116" height="42" rx="7" fill="#991B1B"/>
   <rect x="2" y="2" width="116" height="42" rx="7" fill="#EF4444"/>
@@ -100,6 +181,9 @@ export const SPRITE_LIBRARY: Record<string, SpriteEntry> = {
   },
   brick_blue: {
     name: '파란 벽돌',
+    category: 'breakout',
+    naturalW: 120,
+    naturalH: 52,
     svg: `<svg viewBox="0 0 120 52" fill="none" xmlns="http://www.w3.org/2000/svg">
   <rect x="2" y="6" width="116" height="42" rx="7" fill="#1D4ED8"/>
   <rect x="2" y="2" width="116" height="42" rx="7" fill="#3B82F6"/>
@@ -114,6 +198,9 @@ export const SPRITE_LIBRARY: Record<string, SpriteEntry> = {
   },
   brick_green: {
     name: '초록 벽돌',
+    category: 'breakout',
+    naturalW: 120,
+    naturalH: 52,
     svg: `<svg viewBox="0 0 120 52" fill="none" xmlns="http://www.w3.org/2000/svg">
   <rect x="2" y="6" width="116" height="42" rx="7" fill="#15803D"/>
   <rect x="2" y="2" width="116" height="42" rx="7" fill="#22C55E"/>
@@ -126,6 +213,36 @@ export const SPRITE_LIBRARY: Record<string, SpriteEntry> = {
   <rect x="88" y="5" width="26" height="8" rx="3" fill="rgba(255,255,255,0.18)"/>
 </svg>`,
   },
+  brick_yellow: { name: '노란 벽돌', category: 'breakout', naturalW: 120, naturalH: 52, png: brickYellowUrl },
+  brick_gold: { name: '황금 벽돌', category: 'breakout', naturalW: 120, naturalH: 52, png: brickGoldUrl },
+  platform: { name: '풀밭 발판', category: 'platformer', naturalW: 200, naturalH: 40, png: platformUrl },
+  platform_stone: { name: '돌 발판', category: 'platformer', naturalW: 200, naturalH: 40, png: platformStoneUrl },
+  coin: { name: '코인', category: 'platformer', naturalW: 60, naturalH: 60, png: coinUrl },
+  star: { name: '별', category: 'platformer', naturalW: 60, naturalH: 60, png: starUrl },
+  slime: { name: '슬라임', category: 'platformer', naturalW: 80, naturalH: 64, png: slimeUrl },
+  spike: { name: '가시', category: 'platformer', naturalW: 60, naturalH: 40, png: spikeUrl },
+  flag: { name: '결승 깃발', category: 'platformer', naturalW: 60, naturalH: 100, png: flagUrl },
+  spaceship: { name: '우주선', category: 'shooter', naturalW: 80, naturalH: 100, png: spaceshipUrl },
+  enemy_ship: { name: '적 우주선', category: 'shooter', naturalW: 80, naturalH: 80, png: enemyShipUrl },
+  bullet: { name: '총알', category: 'shooter', naturalW: 20, naturalH: 40, png: bulletUrl },
+  asteroid: { name: '소행성', category: 'shooter', naturalW: 80, naturalH: 80, png: asteroidUrl },
+  heart: { name: '하트', category: 'common', naturalW: 60, naturalH: 54, png: heartUrl },
+  explosion: { name: '폭발', category: 'common', naturalW: 80, naturalH: 80, png: explosionUrl },
+  trophy: { name: '트로피', category: 'common', naturalW: 80, naturalH: 100, png: trophyUrl },
+  janggi_cha_r: { name: '車(빨강)', category: 'janggi', naturalW: 72, naturalH: 72, png: janggiChaRUrl },
+  janggi_ma_r: { name: '馬(빨강)', category: 'janggi', naturalW: 72, naturalH: 72, png: janggiMaRUrl },
+  janggi_sang_r: { name: '象(빨강)', category: 'janggi', naturalW: 72, naturalH: 72, png: janggiSangRUrl },
+  janggi_po_r: { name: '包(빨강)', category: 'janggi', naturalW: 72, naturalH: 72, png: janggiPoRUrl },
+  janggi_sa_r: { name: '士(빨강)', category: 'janggi', naturalW: 72, naturalH: 72, png: janggiSaRUrl },
+  janggi_jang_r: { name: '將(빨강)', category: 'janggi', naturalW: 72, naturalH: 72, png: janggiJangRUrl },
+  janggi_jol_r: { name: '卒(빨강)', category: 'janggi', naturalW: 72, naturalH: 72, png: janggiJolRUrl },
+  janggi_cha_b: { name: '車(파랑)', category: 'janggi', naturalW: 72, naturalH: 72, png: janggiChaBUrl },
+  janggi_ma_b: { name: '馬(파랑)', category: 'janggi', naturalW: 72, naturalH: 72, png: janggiMaBUrl },
+  janggi_sang_b: { name: '象(파랑)', category: 'janggi', naturalW: 72, naturalH: 72, png: janggiSangBUrl },
+  janggi_po_b: { name: '包(파랑)', category: 'janggi', naturalW: 72, naturalH: 72, png: janggiPoBUrl },
+  janggi_sa_b: { name: '士(파랑)', category: 'janggi', naturalW: 72, naturalH: 72, png: janggiSaBUrl },
+  janggi_han_b: { name: '漢(파랑)', category: 'janggi', naturalW: 72, naturalH: 72, png: janggiHanBUrl },
+  janggi_byong_b: { name: '兵(파랑)', category: 'janggi', naturalW: 72, naturalH: 72, png: janggiByongBUrl },
 }
 
 const spriteImageCache = new Map<string, HTMLImageElement>()
@@ -139,14 +256,17 @@ function getSpriteImage(id = 'cat'): Promise<HTMLImageElement> {
   if (cached) return Promise.resolve(cached)
   const entry = SPRITE_LIBRARY[id] ?? SPRITE_LIBRARY.cat
   return new Promise((resolve) => {
-    const blob = new Blob([entry.svg], { type: 'image/svg+xml' })
-    const url = URL.createObjectURL(blob)
     const img = new Image()
     img.onload = () => {
       spriteImageCache.set(id, img)
       resolve(img)
     }
-    img.src = url
+    if (entry.png) {
+      img.src = entry.png
+    } else if (entry.svg) {
+      const blob = new Blob([entry.svg], { type: 'image/svg+xml' })
+      img.src = URL.createObjectURL(blob)
+    }
   })
 }
 
@@ -227,63 +347,79 @@ function drawCloud(ctx: CanvasRenderingContext2D, x: number, y: number, w: numbe
   ctx.fill()
 }
 
-export function renderStage(canvas: HTMLCanvasElement, state: SpriteState, img?: HTMLImageElement) {
+export function renderStage(
+  canvas: HTMLCanvasElement,
+  entities: SpriteEntity[],
+  images: Map<string, HTMLImageElement>,
+  bg: Background,
+): void {
   const ctx = canvas.getContext('2d')
   if (!ctx) return
 
   // background
-  BG_DRAWS[state.bg](ctx)
+  BG_DRAWS[bg](ctx)
 
-  if (!state.visible) return
+  // draw entities in z-order (index 0 = bottom, last = top)
+  for (const entity of entities) {
+    if (!entity.state.visible) continue
 
-  const spriteW = 72 * (state.size / 100)
-  const spriteH = 88 * (state.size / 100)
-  const cx = STAGE_W / 2 + state.x
-  const cy = STAGE_H / 2 - state.y
+    const entry = SPRITE_LIBRARY[entity.state.spriteId] ?? SPRITE_LIBRARY.cat
+    const img = images.get(entity.state.spriteId)
 
-  if (img) {
-    ctx.save()
-    ctx.translate(cx, cy)
-    if (state.direction > 180) ctx.scale(-1, 1)
-    ctx.drawImage(img, -spriteW / 2, -spriteH / 2, spriteW, spriteH)
-    ctx.restore()
+    const baseW = entry.naturalW
+    const baseH = entry.naturalH
+    const spriteW = baseW * (entity.state.size / 100)
+    const spriteH = baseH * (entity.state.size / 100)
+    const cx = STAGE_W / 2 + entity.state.x
+    const cy = STAGE_H / 2 - entity.state.y
+
+    if (img) {
+      ctx.save()
+      ctx.translate(cx, cy)
+      if (entity.state.direction > 180) ctx.scale(-1, 1)
+      ctx.drawImage(img, -spriteW / 2, -spriteH / 2, spriteW, spriteH)
+      ctx.restore()
+    }
+
+    // speech bubble
+    if (entity.state.speech) {
+      ctx.save()
+      ctx.font = 'bold 13px Nunito, sans-serif'
+      const padding = 10
+      const tw = ctx.measureText(entity.state.speech).width
+      const bw = tw + padding * 2
+      const bh = 30
+      const bx = cx - bw / 2
+      const by = cy - spriteH / 2 - bh - 10
+      ctx.fillStyle = '#fff'
+      ctx.strokeStyle = '#FFE0D6'
+      ctx.lineWidth = 2.5
+      roundRect(ctx, bx, by, bw, bh, 10)
+      ctx.fill()
+      ctx.stroke()
+      // tail
+      ctx.beginPath()
+      ctx.moveTo(cx - 8, by + bh)
+      ctx.lineTo(cx + 4, by + bh)
+      ctx.lineTo(cx - 4, by + bh + 8)
+      ctx.closePath()
+      ctx.fillStyle = '#fff'
+      ctx.fill()
+      ctx.fillStyle = '#2C1810'
+      ctx.fillText(entity.state.speech, bx + padding, by + bh / 2 + 5)
+      ctx.restore()
+    }
   }
 
-  // speech bubble
-  if (state.speech) {
+  // coordinate display for first entity
+  if (entities.length > 0) {
+    const first = entities[0]
     ctx.save()
-    ctx.font = 'bold 13px Nunito, sans-serif'
-    const padding = 10
-    const tw = ctx.measureText(state.speech).width
-    const bw = tw + padding * 2
-    const bh = 30
-    const bx = cx - bw / 2
-    const by = cy - spriteH / 2 - bh - 10
-    ctx.fillStyle = '#fff'
-    ctx.strokeStyle = '#FFE0D6'
-    ctx.lineWidth = 2.5
-    roundRect(ctx, bx, by, bw, bh, 10)
-    ctx.fill()
-    ctx.stroke()
-    // tail
-    ctx.beginPath()
-    ctx.moveTo(cx - 8, by + bh)
-    ctx.lineTo(cx + 4, by + bh)
-    ctx.lineTo(cx - 4, by + bh + 8)
-    ctx.closePath()
-    ctx.fillStyle = '#fff'
-    ctx.fill()
-    ctx.fillStyle = '#2C1810'
-    ctx.fillText(state.speech, bx + padding, by + bh / 2 + 5)
+    ctx.fillStyle = 'rgba(255,255,255,0.7)'
+    ctx.font = '11px monospace'
+    ctx.fillText(`x: ${Math.round(first.state.x)}  y: ${Math.round(first.state.y)}`, 8, STAGE_H - 6)
     ctx.restore()
   }
-
-  // coordinate display
-  ctx.save()
-  ctx.fillStyle = 'rgba(255,255,255,0.7)'
-  ctx.font = '11px monospace'
-  ctx.fillText(`x: ${Math.round(state.x)}  y: ${Math.round(state.y)}`, 8, STAGE_H - 6)
-  ctx.restore()
 }
 
 function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
@@ -310,9 +446,9 @@ function sleep(ms: number) {
 
 export class SpriteRuntime {
   state: SpriteState
+  private entity: SpriteEntity
+  private engine: GameEngine
   private canvas: HTMLCanvasElement
-  private img: HTMLImageElement | null = null
-  private keysDown: Set<string> = new Set()
   private stopFlag = false
   private mouseClickHandlers: (() => void)[] = []
   private onStateChange?: (s: SpriteState) => void
@@ -322,46 +458,24 @@ export class SpriteRuntime {
   private mouseY = 0
   private detachMouse: (() => void) | null = null
 
-  constructor(canvas: HTMLCanvasElement, initialState: SpriteState, onStateChange?: (s: SpriteState) => void) {
-    this.state = { ...initialState }
+  private get keysDown() { return this.engine.keysDown }
+
+  constructor(
+    canvas: HTMLCanvasElement,
+    entity: SpriteEntity,
+    engine: GameEngine,
+    onStateChange?: (s: SpriteState) => void,
+  ) {
+    this.entity = entity
+    this.state = entity.state  // SHARED reference
+    this.engine = engine
     this.canvas = canvas
     this.onStateChange = onStateChange
-    getSpriteImage(this.state.spriteId).then((img) => {
-      this.img = img
-      this.render()
-    })
   }
 
   render() {
-    const cached = spriteImageCache.get(this.state.spriteId)
-    if (cached && cached !== this.img) this.img = cached
-    renderStage(this.canvas, this.state, this.img ?? undefined)
+    this.engine.render()
     this.onStateChange?.({ ...this.state })
-  }
-
-  // track keyboard + mouse position
-  attachKeyListeners() {
-    const kd = (e: KeyboardEvent) => this.keysDown.add(e.key)
-    const ku = (e: KeyboardEvent) => this.keysDown.delete(e.key)
-    document.addEventListener('keydown', kd)
-    document.addEventListener('keyup', ku)
-
-    const rect = this.canvas.getBoundingClientRect()
-    const mm = (e: MouseEvent) => {
-      const scaleX = STAGE_W / rect.width
-      const scaleY = STAGE_H / rect.height
-      this.mouseX = (e.clientX - rect.left) * scaleX - STAGE_W / 2
-      this.mouseY = -(((e.clientY - rect.top) * scaleY) - STAGE_H / 2)
-    }
-    this.canvas.addEventListener('mousemove', mm)
-    this.detachMouse = () => this.canvas.removeEventListener('mousemove', mm)
-
-    return () => {
-      document.removeEventListener('keydown', kd)
-      document.removeEventListener('keyup', ku)
-      this.detachMouse?.()
-      this.detachMouse = null
-    }
   }
 
   stop() {
@@ -379,6 +493,17 @@ export class SpriteRuntime {
   async run(workspace: BlocklyType.WorkspaceSvg) {
     this.stopFlag = false
     const topBlocks = workspace.getTopBlocks(true) as Block[]
+
+    // attach canvas mousemove listener for mouse sensing
+    const rect = this.canvas.getBoundingClientRect()
+    const mm = (e: MouseEvent) => {
+      const scaleX = STAGE_W / rect.width
+      const scaleY = STAGE_H / rect.height
+      this.mouseX = (e.clientX - rect.left) * scaleX - STAGE_W / 2
+      this.mouseY = -(((e.clientY - rect.top) * scaleY) - STAGE_H / 2)
+    }
+    this.canvas.addEventListener('mousemove', mm)
+    this.detachMouse = () => this.canvas.removeEventListener('mousemove', mm)
 
     const promises: Promise<void>[] = []
 
@@ -398,8 +523,21 @@ export class SpriteRuntime {
       } else if (block.type === 'wc_mouse_click_hat') {
         promises.push(this.runMouseHat(block.getNextBlock()))
       }
+      // wc_when_clone_start is intentionally skipped here — handled by runFromClone()
     }
 
+    await Promise.allSettled(promises)
+  }
+
+  async runFromClone(workspace: BlocklyType.WorkspaceSvg): Promise<void> {
+    this.stopFlag = false
+    const topBlocks = workspace.getTopBlocks(true) as Block[]
+    const promises: Promise<void>[] = []
+    for (const block of topBlocks) {
+      if (block.type === 'wc_when_clone_start') {
+        promises.push(this.executeStack(block.getNextBlock()))
+      }
+    }
     await Promise.allSettled(promises)
   }
 
@@ -566,12 +704,13 @@ export class SpriteRuntime {
         break
       }
       case 'wc_bounce_wall': {
-        const maxX = STAGE_W / 2 - 36
-        const maxY = STAGE_H / 2 - 44
-        if (Math.abs(this.state.x) >= maxX) {
+        const bwEntry = SPRITE_LIBRARY[this.state.spriteId] ?? SPRITE_LIBRARY.cat
+        const bwHW = (bwEntry.naturalW / 2) * (this.state.size / 100)
+        const bwHH = (bwEntry.naturalH / 2) * (this.state.size / 100)
+        if (Math.abs(this.state.x) + bwHW >= STAGE_W / 2) {
           this.state.direction = 180 - this.state.direction
         }
-        if (Math.abs(this.state.y) >= maxY) {
+        if (Math.abs(this.state.y) + bwHH >= STAGE_H / 2) {
           this.state.direction = -this.state.direction
         }
         this.state.direction = ((this.state.direction % 360) + 360) % 360
@@ -663,6 +802,63 @@ export class SpriteRuntime {
         await sleep(16)
         break
       }
+
+      // ── PHYSICS ──
+      case 'wc_set_vx': {
+        const valBlock = block.getInputTargetBlock('VALUE') as Block | null
+        this.state.vx = valBlock ? await this.evalNumber(valBlock) : 0
+        break
+      }
+      case 'wc_set_vy': {
+        const valBlock = block.getInputTargetBlock('VALUE') as Block | null
+        this.state.vy = valBlock ? await this.evalNumber(valBlock) : 0
+        break
+      }
+      case 'wc_change_vx': {
+        const valBlock = block.getInputTargetBlock('VALUE') as Block | null
+        this.state.vx += valBlock ? await this.evalNumber(valBlock) : 0
+        break
+      }
+      case 'wc_change_vy': {
+        const valBlock = block.getInputTargetBlock('VALUE') as Block | null
+        this.state.vy += valBlock ? await this.evalNumber(valBlock) : 0
+        break
+      }
+      case 'wc_apply_velocity': {
+        this.state.x += this.state.vx
+        this.state.y += this.state.vy
+        this.clampToWall()
+        this.render()
+        await sleep(16)
+        break
+      }
+      case 'wc_apply_gravity': {
+        const gravBlock = block.getInputTargetBlock('GRAVITY') as Block | null
+        const grav = gravBlock ? await this.evalNumber(gravBlock) : 1
+        this.state.vy -= grav
+        break
+      }
+
+      // ── CLONE ──
+      case 'wc_clone_self': {
+        this.engine.cloneSprite(this.entity.id)
+        await sleep(0)
+        break
+      }
+      case 'wc_delete_clone': {
+        if (this.entity.isClone) {
+          this.engine.deleteEntity(this.entity.id)
+          this.stopFlag = true
+        }
+        break
+      }
+
+      // ── LOOKS (delete) ──
+      case 'wc_delete_sprite': {
+        this.engine.deleteEntity(this.entity.id)
+        this.stopFlag = true
+        break
+      }
     }
   }
 
@@ -704,6 +900,18 @@ export class SpriteRuntime {
         const divisor = b ? await this.evalNumber(b) : 1
         return divisor !== 0 ? (a ? await this.evalNumber(a) : 0) / divisor : 0
       }
+      case 'wc_get_vx':
+        return this.state.vx
+      case 'wc_get_vy':
+        return this.state.vy
+      case 'wc_sprite_x_of': {
+        const name = block.getFieldValue('SPRITE') as string
+        return this.engine.getSpriteState(name)?.x ?? 0
+      }
+      case 'wc_sprite_y_of': {
+        const name = block.getFieldValue('SPRITE') as string
+        return this.engine.getSpriteState(name)?.y ?? 0
+      }
       default:
         return Number(block.getFieldValue('NUM') ?? block.getFieldValue('VALUE') ?? 0)
     }
@@ -730,26 +938,179 @@ export class SpriteRuntime {
         const b = block.getInputTargetBlock('B') as Block | null
         return (a ? await this.evalNumber(a) : 0) === (b ? await this.evalNumber(b) : 0)
       }
+      case 'wc_touching_sprite': {
+        const targetName = block.getFieldValue('SPRITE') as string
+        return this.engine.isTouchingSprite(this.entity.id, targetName)
+      }
+      case 'wc_on_floor': {
+        // true if sprite is near the bottom wall
+        const entry = SPRITE_LIBRARY[this.state.spriteId] ?? SPRITE_LIBRARY.cat
+        const hh = (entry.naturalH / 2) * (this.state.size / 100)
+        return this.state.y - hh <= -STAGE_H / 2 + 2
+      }
       default:
         return false
     }
   }
 
   private isTouchingWall(): boolean {
-    const spriteW = 36 * (this.state.size / 100)
-    const spriteH = 44 * (this.state.size / 100)
+    const entry = SPRITE_LIBRARY[this.state.spriteId] ?? SPRITE_LIBRARY.cat
+    const hw = (entry.naturalW / 2) * (this.state.size / 100)
+    const hh = (entry.naturalH / 2) * (this.state.size / 100)
     return (
-      this.state.x - spriteW < -STAGE_W / 2 ||
-      this.state.x + spriteW > STAGE_W / 2 ||
-      this.state.y - spriteH < -STAGE_H / 2 ||
-      this.state.y + spriteH > STAGE_H / 2
+      this.state.x - hw < -STAGE_W / 2 ||
+      this.state.x + hw > STAGE_W / 2 ||
+      this.state.y - hh < -STAGE_H / 2 ||
+      this.state.y + hh > STAGE_H / 2
     )
   }
 
   private clampToWall() {
-    const maxX = STAGE_W / 2 - 36
-    const maxY = STAGE_H / 2 - 44
-    this.state.x = Math.max(-maxX, Math.min(maxX, this.state.x))
-    this.state.y = Math.max(-maxY, Math.min(maxY, this.state.y))
+    const entry = SPRITE_LIBRARY[this.state.spriteId] ?? SPRITE_LIBRARY.cat
+    const hw = (entry.naturalW / 2) * (this.state.size / 100)
+    const hh = (entry.naturalH / 2) * (this.state.size / 100)
+    this.state.x = Math.max(-STAGE_W / 2 + hw, Math.min(STAGE_W / 2 - hw, this.state.x))
+    this.state.y = Math.max(-STAGE_H / 2 + hh, Math.min(STAGE_H / 2 - hh, this.state.y))
+  }
+}
+
+export class GameEngine {
+  entities: SpriteEntity[]
+  keysDown: Set<string>  // public so SpriteRuntime can read it
+  private canvas: HTMLCanvasElement
+  private runtimes: Map<string, SpriteRuntime>
+  private onEntitiesChange: (e: SpriteEntity[]) => void
+  images: Map<string, HTMLImageElement>  // public for renderStage
+  private detachKeys: (() => void) | null = null
+  private cloneCounter = 0
+
+  constructor(
+    canvas: HTMLCanvasElement,
+    entities: SpriteEntity[],
+    onEntitiesChange: (e: SpriteEntity[]) => void,
+  ) {
+    this.canvas = canvas
+    this.entities = entities
+    this.onEntitiesChange = onEntitiesChange
+    this.runtimes = new Map()
+    this.keysDown = new Set()
+    this.images = new Map()
+  }
+
+  async loadImages(): Promise<void> {
+    // load images for all unique spriteIds in entities
+    const ids = [...new Set(this.entities.map(e => e.state.spriteId))]
+    await Promise.all(ids.map(id => getSpriteImageExport(id).then(img => this.images.set(id, img))))
+  }
+
+  async run(workspaces: Map<string, BlocklyType.WorkspaceSvg>): Promise<void> {
+    await this.loadImages()
+    this.attachKeyListeners()
+    this.render()
+
+    // create SpriteRuntime for each entity (only non-clone entities have workspaces)
+    const promises: Promise<void>[] = []
+    for (const entity of this.entities) {
+      const ws = workspaces.get(entity.id)
+      if (!ws) continue
+      const rt = new SpriteRuntime(this.canvas, entity, this)
+      this.runtimes.set(entity.id, rt)
+      promises.push(rt.run(ws))
+    }
+    await Promise.allSettled(promises)
+  }
+
+  stop(): void {
+    for (const rt of this.runtimes.values()) rt.stop()
+    this.runtimes.clear()
+    this.detachKeys?.()
+    this.detachKeys = null
+  }
+
+  render(): void {
+    const bg = this.entities[0]?.state.bg ?? 'sky'
+    renderStage(this.canvas, this.entities, this.images, bg)
+  }
+
+  attachKeyListeners(): () => void {
+    const kd = (e: KeyboardEvent) => this.keysDown.add(e.key)
+    const ku = (e: KeyboardEvent) => this.keysDown.delete(e.key)
+    document.addEventListener('keydown', kd)
+    document.addEventListener('keyup', ku)
+    const detach = () => {
+      document.removeEventListener('keydown', kd)
+      document.removeEventListener('keyup', ku)
+    }
+    this.detachKeys = detach
+    return detach
+  }
+
+  cloneSprite(sourceId: string): void {
+    const source = this.entities.find(e => e.id === sourceId)
+    if (!source) return
+    this.cloneCounter++
+    const cloneId = `${sourceId}_clone_${this.cloneCounter}`
+    const cloneEntity: SpriteEntity = {
+      id: cloneId,
+      name: source.name,
+      isClone: true,
+      state: { ...source.state },
+      workspaceData: source.workspaceData,
+    }
+    this.entities.push(cloneEntity)
+    this.onEntitiesChange([...this.entities])
+
+    // load clone's image if not already loaded
+    const spriteId = cloneEntity.state.spriteId
+    if (!this.images.has(spriteId)) {
+      getSpriteImageExport(spriteId).then(img => this.images.set(spriteId, img))
+    }
+
+    // run clone's blocks from wc_when_clone_start using dynamic Blockly import
+    // create a headless workspace and load the clone's workspaceData
+    void (async () => {
+      try {
+        const Blockly = await import('blockly')
+        const ws = new Blockly.Workspace() as unknown as BlocklyType.WorkspaceSvg
+        Blockly.serialization.workspaces.load(cloneEntity.workspaceData as Parameters<typeof Blockly.serialization.workspaces.load>[0], ws)
+        const rt = new SpriteRuntime(this.canvas, cloneEntity, this)
+        this.runtimes.set(cloneId, rt)
+        await rt.runFromClone(ws)
+      } catch {
+        // clone execution failed, clean up
+        this.deleteEntity(cloneId)
+      }
+    })()
+  }
+
+  deleteEntity(id: string): void {
+    const rt = this.runtimes.get(id)
+    if (rt) { rt.stop(); this.runtimes.delete(id) }
+    this.entities = this.entities.filter(e => e.id !== id)
+    this.onEntitiesChange([...this.entities])
+    this.render()
+  }
+
+  isTouchingSprite(aId: string, bName: string): boolean {
+    const a = this.entities.find(e => e.id === aId)
+    const b = this.entities.find(e => e.name === bName && e.id !== aId)
+    if (!a || !b) return false
+    if (!a.state.visible || !b.state.visible) return false
+
+    const aEntry = SPRITE_LIBRARY[a.state.spriteId] ?? SPRITE_LIBRARY.cat
+    const bEntry = SPRITE_LIBRARY[b.state.spriteId] ?? SPRITE_LIBRARY.cat
+    const aHW = (aEntry.naturalW / 2) * (a.state.size / 100)
+    const aHH = (aEntry.naturalH / 2) * (a.state.size / 100)
+    const bHW = (bEntry.naturalW / 2) * (b.state.size / 100)
+    const bHH = (bEntry.naturalH / 2) * (b.state.size / 100)
+
+    return (
+      Math.abs(a.state.x - b.state.x) < aHW + bHW &&
+      Math.abs(a.state.y - b.state.y) < aHH + bHH
+    )
+  }
+
+  getSpriteState(name: string): SpriteState | null {
+    return this.entities.find(e => e.name === name)?.state ?? null
   }
 }

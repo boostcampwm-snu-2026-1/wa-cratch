@@ -6,9 +6,16 @@ import { useToast } from '../../hooks/useToast'
 import Toast from '../../components/Toast/Toast'
 import StageCanvas from './StageCanvas'
 import { useAuth } from '../../context/AuthContext'
-import { registerBlocks, TOOLBOX_CONFIG } from './blockDefs'
-import { SpriteRuntime, defaultSpriteState, SPRITE_LIBRARY } from './spriteRuntime'
-import type { SpriteState, Background } from './spriteRuntime'
+import { registerBlocks, TOOLBOX_CONFIG, updateSpriteListForDropdown } from './blockDefs'
+import {
+  GameEngine,
+  defaultSpriteEntity,
+  migrateProjectData,
+  renderStage,
+  getSpriteImageExport,
+  SPRITE_LIBRARY,
+} from './spriteRuntime'
+import type { SpriteEntity, Background } from './spriteRuntime'
 import { getProject, createProject, updateProject } from '../../api/projects'
 import axios from 'axios'
 import TextAgent from '../../components/TextAgent/TextAgent'
@@ -20,9 +27,11 @@ export default function EditorPage() {
   const navigate = useNavigate()
   const { toastVisible, toastMessage, toastType, showToast } = useToast()
   const { user } = useAuth()
+
+  const [entities, setEntities] = useState<SpriteEntity[]>(() => [defaultSpriteEntity()])
+  const [activeEntityId, setActiveEntityId] = useState('sprite_1')
+  const [selectedBg, setSelectedBg] = useState<Background>('sky')
   const [isRunning, setIsRunning] = useState(false)
-  const [spriteState, setSpriteState] = useState<SpriteState>(defaultSpriteState())
-  const [selectedBg, setSelectedBg] = useState<Background>('white')
   const [blockCount, setBlockCount] = useState(0)
   const [projectTitle, setProjectTitle] = useState('새 프로젝트')
   const [flyoutOpen, setFlyoutOpen] = useState(false)
@@ -31,8 +40,32 @@ export default function EditorPage() {
   const workspaceDivRef = useRef<HTMLDivElement>(null)
   const workspaceRef = useRef<Blockly.WorkspaceSvg | null>(null)
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
-  const runtimeRef = useRef<SpriteRuntime | null>(null)
-  const detachKeysRef = useRef<(() => void) | null>(null)
+  const engineRef = useRef<GameEngine | null>(null)
+  const entitiesRef = useRef<SpriteEntity[]>(entities)
+  const activeEntityIdRef = useRef<string>(activeEntityId)
+  const selectedBgRef = useRef<Background>('sky')
+
+  // refs를 state와 동기화
+  useEffect(() => { entitiesRef.current = entities }, [entities])
+  useEffect(() => { activeEntityIdRef.current = activeEntityId }, [activeEntityId])
+  useEffect(() => { selectedBgRef.current = selectedBg }, [selectedBg])
+
+  // 엔티티 변경 시 드롭다운 스프라이트 목록 갱신
+  useEffect(() => {
+    updateSpriteListForDropdown(entities.map((e) => ({ id: e.id, name: e.name })))
+  }, [entities])
+
+  // 미리보기 렌더링 헬퍼
+  const previewRender = useCallback(() => {
+    const canvas = canvasRef.current
+    if (!canvas) return
+    const current = entitiesRef.current
+    const ids = [...new Set(current.map((e) => e.state.spriteId))]
+    Promise.all(ids.map((id) => getSpriteImageExport(id).then((img) => [id, img] as const)))
+      .then((pairs) => {
+        renderStage(canvas, current, new Map(pairs), selectedBgRef.current)
+      })
+  }, [])
 
   // Blockly 워크스페이스 주입
   useEffect(() => {
@@ -100,7 +133,14 @@ export default function EditorPage() {
             project.blocks_json &&
             Object.keys(project.blocks_json).length > 0
           ) {
-            Blockly.serialization.workspaces.load(project.blocks_json, workspace)
+            const { bg, sprites } = migrateProjectData(project.blocks_json)
+            setSelectedBg(bg)
+            setEntities(sprites)
+            setActiveEntityId(sprites[0]?.id ?? 'sprite_1')
+            // 첫 스프라이트의 워크스페이스 데이터 로드
+            if (sprites[0] && Object.keys(sprites[0].workspaceData).length > 0) {
+              Blockly.serialization.workspaces.load(sprites[0].workspaceData, workspace)
+            }
           }
         })
         .catch(() => {})
@@ -126,6 +166,67 @@ export default function EditorPage() {
     return () => window.removeEventListener('resize', handleResize)
   }, [])
 
+  // 엔티티 / 배경 변경 시 미리보기 렌더링 (실행 중이 아닐 때만)
+  useEffect(() => {
+    if (!isRunning) previewRender()
+  }, [entities, selectedBg, isRunning, previewRender])
+
+  // 활성 엔티티 전환
+  const switchEntity = useCallback((newId: string) => {
+    if (newId === activeEntityIdRef.current) return
+    // 현재 엔티티의 워크스페이스 데이터 저장
+    const currentEntity = entitiesRef.current.find((e) => e.id === activeEntityIdRef.current)
+    if (currentEntity && workspaceRef.current) {
+      currentEntity.workspaceData = Blockly.serialization.workspaces.save(workspaceRef.current)
+    }
+    // 새 엔티티의 워크스페이스 데이터 로드
+    const newEntity = entitiesRef.current.find((e) => e.id === newId)
+    if (newEntity && workspaceRef.current) {
+      Blockly.serialization.workspaces.load(newEntity.workspaceData, workspaceRef.current)
+    }
+    setActiveEntityId(newId)
+  }, [])
+
+  // 스프라이트 추가
+  const handleAddSprite = useCallback((spriteId: string) => {
+    // 현재 워크스페이스 저장
+    const currentEntity = entitiesRef.current.find((e) => e.id === activeEntityIdRef.current)
+    if (currentEntity && workspaceRef.current) {
+      currentEntity.workspaceData = Blockly.serialization.workspaces.save(workspaceRef.current)
+    }
+    // 새 엔티티 생성
+    const entry = SPRITE_LIBRARY[spriteId]
+    const sameCount = entitiesRef.current.filter((e) => e.state.spriteId === spriteId).length
+    const name = sameCount > 0 ? `${entry.name} ${sameCount + 1}` : entry.name
+    const newId = `sprite_${Date.now()}`
+    const newEntity = defaultSpriteEntity(newId, name, spriteId)
+    newEntity.state.bg = selectedBgRef.current
+    const newEntities = [...entitiesRef.current, newEntity]
+    setEntities(newEntities)
+    setActiveEntityId(newId)
+    // 새 스프라이트용 빈 워크스페이스
+    if (workspaceRef.current) workspaceRef.current.clear()
+  }, [])
+
+  // 스프라이트 삭제
+  const handleDeleteEntity = useCallback((id: string) => {
+    const current = entitiesRef.current
+    if (current.length <= 1) return
+    const newEntities = current.filter((e) => e.id !== id)
+    // 활성 엔티티 삭제 시 첫 번째 남은 엔티티로 전환
+    if (id === activeEntityIdRef.current && workspaceRef.current) {
+      const fallback = newEntities[0]
+      Blockly.serialization.workspaces.load(fallback.workspaceData, workspaceRef.current)
+      setActiveEntityId(fallback.id)
+    }
+    setEntities(newEntities)
+  }, [])
+
+  // 스프라이트 이름 변경
+  const handleRenameEntity = useCallback((id: string, name: string) => {
+    setEntities((prev) => prev.map((e) => (e.id === id ? { ...e, name } : e)))
+  }, [])
+
   // isRunning이 true로 바뀐 후 useEffect에서 실행 → React가 렌더 완료 후 실행 보장
   const pendingRun = useRef(false)
 
@@ -138,66 +239,74 @@ export default function EditorPage() {
     if (!isRunning || !pendingRun.current) return
     pendingRun.current = false
 
-    if (!workspaceRef.current || !canvasRef.current) return
     const canvas = canvasRef.current
+    const workspace = workspaceRef.current
+    if (!canvas || !workspace) return
 
-    if (runtimeRef.current) runtimeRef.current.stop()
-    if (detachKeysRef.current) detachKeysRef.current()
+    // 활성 엔티티의 워크스페이스 데이터 저장
+    const activeEntity = entitiesRef.current.find((e) => e.id === activeEntityIdRef.current)
+    if (activeEntity) {
+      activeEntity.workspaceData = Blockly.serialization.workspaces.save(workspace)
+    }
 
-    const initial = { ...defaultSpriteState(), bg: selectedBg }
-    const runtime = new SpriteRuntime(canvas, initial, (state) => {
-      setSpriteState({ ...state })
+    if (engineRef.current) engineRef.current.stop()
+
+    // 모든 엔티티에 대한 헤드리스 워크스페이스 생성
+    const workspaceMap = new Map<string, Blockly.WorkspaceSvg>()
+    for (const entity of entitiesRef.current) {
+      const ws = new Blockly.Workspace() as unknown as Blockly.WorkspaceSvg
+      if (Object.keys(entity.workspaceData).length > 0) {
+        Blockly.serialization.workspaces.load(entity.workspaceData, ws)
+      }
+      workspaceMap.set(entity.id, ws)
+    }
+
+    const engine = new GameEngine(canvas, [...entitiesRef.current], () => {
+      // 실행 중 엔티티 변경(복제 등) — EditorPage state로 동기화하지 않음
+      // GameEngine이 런타임 동안 자체 entities 배열을 관리
     })
-    runtimeRef.current = runtime
-    detachKeysRef.current = runtime.attachKeyListeners()
-    setSpriteState(initial)
+    engineRef.current = engine
 
     const runStart = Date.now()
-    runtime.run(workspaceRef.current).finally(() => {
-      // 빈 워크스페이스에서도 "실행 중" 상태가 최소 150ms 이상 보이도록 보장
+    engine.run(workspaceMap).finally(() => {
       const elapsed = Date.now() - runStart
       const delay = Math.max(0, 150 - elapsed)
       setTimeout(() => setIsRunning(false), delay)
+      // 실행 후 미리보기 재렌더링
+      previewRender()
     })
   // selectedBg는 실행 시 캡처되므로 의도적으로 제외
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isRunning])
 
   const handleStop = useCallback(() => {
-    runtimeRef.current?.stop()
-    detachKeysRef.current?.()
-    detachKeysRef.current = null
+    engineRef.current?.stop()
     setIsRunning(false)
-  }, [])
+    previewRender()
+  }, [previewRender])
 
   // 컴포넌트 언마운트 시 정리
   useEffect(() => {
     return () => {
-      runtimeRef.current?.stop()
-      detachKeysRef.current?.()
+      engineRef.current?.stop()
     }
   }, [])
 
   const handleBgChange = useCallback((bg: Background) => {
     setSelectedBg(bg)
-    setSpriteState((prev) => ({ ...prev, bg }))
-    if (runtimeRef.current) {
-      runtimeRef.current.state.bg = bg
-      runtimeRef.current.render()
-    }
-  }, [])
-
-  const handleSpriteChange = useCallback((spriteId: string) => {
-    setSpriteState((prev) => ({ ...prev, spriteId }))
-    if (runtimeRef.current) {
-      runtimeRef.current.state.spriteId = spriteId
-      runtimeRef.current.render()
-    }
+    setEntities((prev) => prev.map((e) => ({ ...e, state: { ...e.state, bg } })))
   }, [])
 
   const handleSave = useCallback(async () => {
-    if (!workspaceRef.current) return
-    const blocks_json = Blockly.serialization.workspaces.save(workspaceRef.current)
+    // 저장 전 활성 엔티티의 워크스페이스 저장
+    const activeEntity = entitiesRef.current.find((e) => e.id === activeEntityIdRef.current)
+    if (activeEntity && workspaceRef.current) {
+      activeEntity.workspaceData = Blockly.serialization.workspaces.save(workspaceRef.current)
+    }
+    const blocks_json = {
+      bg: selectedBgRef.current,
+      sprites: entitiesRef.current,
+    }
     try {
       if (!id || id === 'new') {
         const newProject = await createProject({ title: projectTitle || '새 프로젝트' })
@@ -222,9 +331,15 @@ export default function EditorPage() {
   useEffect(() => {
     if (!id || id === 'new') return
     const timer = setInterval(async () => {
-      if (!workspaceRef.current) return
+      const activeEntity = entitiesRef.current.find((e) => e.id === activeEntityIdRef.current)
+      if (activeEntity && workspaceRef.current) {
+        activeEntity.workspaceData = Blockly.serialization.workspaces.save(workspaceRef.current)
+      }
       try {
-        const blocks_json = Blockly.serialization.workspaces.save(workspaceRef.current)
+        const blocks_json = {
+          bg: selectedBgRef.current,
+          sprites: entitiesRef.current,
+        }
         await updateProject(id, { blocks_json, title: projectTitle || '새 프로젝트' })
       } catch {
         // 자동 저장 실패는 조용히 무시
@@ -287,11 +402,15 @@ export default function EditorPage() {
 
         {/* STAGE PANEL */}
         <StageCanvas
-          state={{ ...spriteState, bg: selectedBg }}
+          entities={entities}
+          activeEntityId={activeEntityId}
           selectedBg={selectedBg}
-          onBgChange={handleBgChange}
-          onSpriteChange={handleSpriteChange}
           canvasRef={canvasRef}
+          onSelectEntity={switchEntity}
+          onAddSprite={handleAddSprite}
+          onDeleteEntity={handleDeleteEntity}
+          onRenameEntity={handleRenameEntity}
+          onBgChange={handleBgChange}
         />
       </div>
 
@@ -301,7 +420,7 @@ export default function EditorPage() {
           <span className={s.statusDot}/>
           {isRunning ? '▶ 실행 중...' : '준비됨'}
         </span>
-        <span>스프라이트: {SPRITE_LIBRARY[spriteState.spriteId]?.name ?? '와냥이'}</span>
+        <span>스프라이트: {entities.length}개</span>
         <span>블록: {blockCount}개</span>
         <span style={{ marginLeft: 'auto' }}>WaCratch v1.0 🐾</span>
       </div>

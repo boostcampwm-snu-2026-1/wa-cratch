@@ -1,0 +1,6 @@
+<svg viewBox="0 0 60 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <polygon points="30,3 47,8 57,22 57,38 47,52 30,57 13,52 3,38 3,22 13,8" fill="#1E3A8A"/>
+  <polygon points="30,5 46,10 55,23 55,37 46,50 30,55 14,50 5,37 5,23 14,10" fill="#3B82F6"/>
+  <polygon points="30,8 44,12 52,24 52,36 44,48 30,52 16,48 8,36 8,24 16,12" fill="white" opacity="0.15"/>
+  <text x="30" y="39" text-anchor="middle" font-family="serif" font-size="22" font-weight="bold" fill="#1E3A8A">包</text>
+</svg>

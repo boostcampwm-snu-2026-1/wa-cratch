@@ -56,11 +56,26 @@
 .addSprite:hover { transform: scale(1.1); }
 .spriteList { display: flex; gap: 8px; padding: 10px 14px; overflow-x: auto; }
 .spriteThumb {
+  position: relative;
   flex-shrink: 0; width: 68px;
   border-radius: 14px; padding: 8px 6px;
   border: 2.5px solid transparent; cursor: pointer;
   display: flex; flex-direction: column; align-items: center; gap: 4px;
   background: #fff; transition: all .2s;
+}
+.deleteThumb {
+  position: absolute; top: 3px; right: 3px;
+  width: 16px; height: 16px; border-radius: 50%;
+  background: rgba(239,68,68,0.85); color: #fff;
+  border: none; cursor: pointer; font-size: 10px;
+  display: none; align-items: center; justify-content: center;
+  padding: 0; line-height: 1;
+}
+.spriteThumb:hover .deleteThumb { display: flex; }
+.nameInput {
+  width: 56px; font-family: var(--font-d); font-size: 10px; font-weight: 800;
+  border: 1.5px solid var(--orange); border-radius: 4px; padding: 2px 3px;
+  text-align: center; outline: none; color: var(--dark); background: #fff;
 }
 .spriteThumb.active { border-color: var(--orange); background: var(--orange-pale); }
 .spriteThumb:hover:not(.active) { border-color: var(--orange-pale); transform: translateY(-2px); }
@@ -100,8 +115,9 @@ img.sIcon { width: 32px; height: 32px; object-fit: contain; }
 .libraryModal {
   background: #fff; border-radius: 20px;
   border: 3px solid var(--orange-pale);
-  padding: 20px; width: 340px; max-width: 95vw;
+  padding: 20px; width: 420px; max-width: 95vw; max-height: 80vh;
   box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+  display: flex; flex-direction: column;
 }
 .libraryHeader {
   display: flex; align-items: center; justify-content: space-between;
@@ -118,8 +134,20 @@ img.sIcon { width: 32px; height: 32px; object-fit: contain; }
   transition: all .15s;
 }
 .libraryClose:hover { background: var(--orange); color: #fff; }
+.libraryTabs {
+  display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 12px;
+}
+.libraryTab {
+  padding: 4px 10px; border-radius: 20px; border: 1.5px solid var(--orange-pale);
+  background: #fff; color: var(--mid); cursor: pointer;
+  font-family: var(--font-d); font-size: 11px; font-weight: 800;
+  transition: all .15s;
+}
+.libraryTab:hover { border-color: var(--orange); color: var(--orange); }
+.libraryTabActive { background: var(--orange) !important; color: #fff !important; border-color: var(--orange) !important; }
 .libraryGrid {
-  display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;
+  overflow-y: auto; flex: 1;
 }
 .libraryItem {
   display: flex; flex-direction: column; align-items: center; gap: 6px;

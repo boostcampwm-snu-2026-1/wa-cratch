@@ -54,7 +54,7 @@ export function useRealtimeVoice(
   nickname: string
 ) {
   const [voiceState, setVoiceState] = useState<VoiceState>('idle')
-  const [transcripts, setTranscripts] = useState<Transcript[]>([])
+  const [_transcripts, setTranscripts] = useState<Transcript[]>([])
 
   const pcRef = useRef<RTCPeerConnection | null>(null)
   const dcRef = useRef<RTCDataChannel | null>(null)

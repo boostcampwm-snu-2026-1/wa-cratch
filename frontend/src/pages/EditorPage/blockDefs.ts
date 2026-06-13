@@ -1,5 +1,13 @@
 import * as Blockly from 'blockly'
 
+export let spriteListForDropdown: [string, string][] = [['와냥이', '와냥이']]
+
+export function updateSpriteListForDropdown(sprites: Array<{ id: string; name: string }>) {
+  spriteListForDropdown = sprites.length > 0
+    ? sprites.map(s => [s.name, s.name] as [string, string])
+    : [['(없음)', '__none__']]
+}
+
 let registered = false
 
 export function registerBlocks() {
@@ -507,7 +515,151 @@ export function registerBlocks() {
       colour: '#2EC4B6',
       tooltip: '스프라이트의 x 좌표를 마우스 x 위치로 이동합니다 (패들 제어에 유용)',
     },
+
+    // ── CLONE ──
+    {
+      type: 'wc_when_clone_start',
+      message0: '🔴 복제되었을 때',
+      nextStatement: null,
+      colour: '#FF6B35',
+      tooltip: '이 스프라이트가 복제되면 아래 블록을 실행합니다',
+    },
+    {
+      type: 'wc_clone_self',
+      message0: '나 자신 복제하기',
+      previousStatement: null,
+      nextStatement: null,
+      colour: '#FF6B35',
+      tooltip: '이 스프라이트의 복제본을 만듭니다',
+    },
+    {
+      type: 'wc_delete_clone',
+      message0: '이 복제본 삭제',
+      previousStatement: null,
+      nextStatement: null,
+      colour: '#FF6B35',
+      tooltip: '복제본이면 이 복제본을 삭제합니다',
+    },
+
+    // ── LOOKS (additional) ──
+    {
+      type: 'wc_delete_sprite',
+      message0: '이 스프라이트 삭제',
+      previousStatement: null,
+      nextStatement: null,
+      colour: '#A855F7',
+      tooltip: '이 스프라이트를 스테이지에서 삭제합니다',
+    },
+
+    // ── PHYSICS ──
+    {
+      type: 'wc_set_vx',
+      message0: 'x 속도를 %1 으로 설정',
+      args0: [{ type: 'input_value', name: 'VALUE', check: 'Number' }],
+      previousStatement: null,
+      nextStatement: null,
+      colour: '#059669',
+      tooltip: 'x 방향 속도를 설정합니다',
+    },
+    {
+      type: 'wc_set_vy',
+      message0: 'y 속도를 %1 으로 설정',
+      args0: [{ type: 'input_value', name: 'VALUE', check: 'Number' }],
+      previousStatement: null,
+      nextStatement: null,
+      colour: '#059669',
+      tooltip: 'y 방향 속도를 설정합니다',
+    },
+    {
+      type: 'wc_change_vx',
+      message0: 'x 속도를 %1 만큼 바꾸기',
+      args0: [{ type: 'input_value', name: 'VALUE', check: 'Number' }],
+      previousStatement: null,
+      nextStatement: null,
+      colour: '#059669',
+      tooltip: 'x 방향 속도를 N만큼 바꿉니다',
+    },
+    {
+      type: 'wc_change_vy',
+      message0: 'y 속도를 %1 만큼 바꾸기',
+      args0: [{ type: 'input_value', name: 'VALUE', check: 'Number' }],
+      previousStatement: null,
+      nextStatement: null,
+      colour: '#059669',
+      tooltip: 'y 방향 속도를 N만큼 바꿉니다',
+    },
+    {
+      type: 'wc_apply_velocity',
+      message0: '속도대로 이동하기',
+      previousStatement: null,
+      nextStatement: null,
+      colour: '#059669',
+      tooltip: '현재 속도(vx, vy)만큼 이동합니다',
+    },
+    {
+      type: 'wc_apply_gravity',
+      message0: '중력 적용 (중력: %1)',
+      args0: [{ type: 'input_value', name: 'GRAVITY', check: 'Number' }],
+      previousStatement: null,
+      nextStatement: null,
+      colour: '#059669',
+      tooltip: 'y 속도에 중력을 적용합니다 (vy -= gravity)',
+    },
+    {
+      type: 'wc_get_vx',
+      message0: 'x 속도',
+      output: 'Number',
+      colour: '#059669',
+      tooltip: '현재 x 방향 속도를 반환합니다',
+    },
+    {
+      type: 'wc_get_vy',
+      message0: 'y 속도',
+      output: 'Number',
+      colour: '#059669',
+      tooltip: '현재 y 방향 속도를 반환합니다',
+    },
+    {
+      type: 'wc_on_floor',
+      message0: '바닥에 닿았는가?',
+      output: 'Boolean',
+      colour: '#059669',
+      tooltip: '스프라이트가 바닥 벽에 닿으면 참을 반환합니다',
+    },
   ])
+
+  Blockly.Blocks['wc_touching_sprite'] = {
+    init(this: Blockly.Block) {
+      this.appendDummyInput()
+        .appendField(new Blockly.FieldDropdown(() => spriteListForDropdown), 'SPRITE')
+        .appendField('에 닿았는가?')
+      this.setOutput(true, 'Boolean')
+      this.setColour('#2EC4B6')
+      this.setTooltip('다른 스프라이트에 닿으면 참을 반환합니다')
+    }
+  }
+
+  Blockly.Blocks['wc_sprite_x_of'] = {
+    init(this: Blockly.Block) {
+      this.appendDummyInput()
+        .appendField(new Blockly.FieldDropdown(() => spriteListForDropdown), 'SPRITE')
+        .appendField('의 x 좌표')
+      this.setOutput(true, 'Number')
+      this.setColour('#2EC4B6')
+      this.setTooltip('지정한 스프라이트의 x 좌표를 반환합니다')
+    }
+  }
+
+  Blockly.Blocks['wc_sprite_y_of'] = {
+    init(this: Blockly.Block) {
+      this.appendDummyInput()
+        .appendField(new Blockly.FieldDropdown(() => spriteListForDropdown), 'SPRITE')
+        .appendField('의 y 좌표')
+      this.setOutput(true, 'Number')
+      this.setColour('#2EC4B6')
+      this.setTooltip('지정한 스프라이트의 y 좌표를 반환합니다')
+    }
+  }
 }
 
 export const TOOLBOX_CONFIG = {
@@ -526,6 +678,16 @@ export const TOOLBOX_CONFIG = {
         { kind: 'block', type: 'wc_if_else' },
         { kind: 'block', type: 'wc_wait' },
         { kind: 'block', type: 'wc_stop_all' },
+      ],
+    },
+    {
+      kind: 'category',
+      name: '🔴 복제',
+      colour: '#FF6B35',
+      contents: [
+        { kind: 'block', type: 'wc_when_clone_start' },
+        { kind: 'block', type: 'wc_clone_self' },
+        { kind: 'block', type: 'wc_delete_clone' },
       ],
     },
     {
@@ -561,6 +723,9 @@ export const TOOLBOX_CONFIG = {
         { kind: 'block', type: 'wc_mouse_x' },
         { kind: 'block', type: 'wc_mouse_y' },
         { kind: 'block', type: 'wc_set_x_to_mouse' },
+        { kind: 'block', type: 'wc_touching_sprite' },
+        { kind: 'block', type: 'wc_sprite_x_of' },
+        { kind: 'block', type: 'wc_sprite_y_of' },
       ],
     },
     {
@@ -582,6 +747,7 @@ export const TOOLBOX_CONFIG = {
         { kind: 'block', type: 'wc_hide' },
         { kind: 'block', type: 'wc_set_size' },
         { kind: 'block', type: 'wc_change_size' },
+        { kind: 'block', type: 'wc_delete_sprite' },
       ],
     },
     {
@@ -617,6 +783,22 @@ export const TOOLBOX_CONFIG = {
         { kind: 'block', type: 'wc_gt' },
         { kind: 'block', type: 'wc_lt' },
         { kind: 'block', type: 'wc_eq' },
+      ],
+    },
+    {
+      kind: 'category',
+      name: '⚡ 물리',
+      colour: '#059669',
+      contents: [
+        { kind: 'block', type: 'wc_set_vx' },
+        { kind: 'block', type: 'wc_set_vy' },
+        { kind: 'block', type: 'wc_change_vx' },
+        { kind: 'block', type: 'wc_change_vy' },
+        { kind: 'block', type: 'wc_apply_velocity' },
+        { kind: 'block', type: 'wc_apply_gravity' },
+        { kind: 'block', type: 'wc_get_vx' },
+        { kind: 'block', type: 'wc_get_vy' },
+        { kind: 'block', type: 'wc_on_floor' },
       ],
     },
   ],
