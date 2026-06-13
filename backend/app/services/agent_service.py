@@ -2,7 +2,7 @@ import os
 from dataclasses import dataclass
 from typing import Any, AsyncGenerator, Callable
 
-from langchain_anthropic import ChatAnthropic
+from langchain_openai import ChatOpenAI
 from langgraph.prebuilt import create_react_agent
 
 SYSTEM_PROMPT = """너의 이름은 '와냥이'야. WaCratch 블록 코딩 에디터의 AI 채팅 도우미 캐릭터야.
@@ -64,9 +64,9 @@ def _make_tools(ctx: ToolContext) -> list[Callable]:
 
 
 def _build_graph(ctx: ToolContext):
-    model = ChatAnthropic(
-        model="claude-sonnet-4-5",
-        api_key=os.getenv("ANTHROPIC_API_KEY"),
+    model = ChatOpenAI(
+        model="gpt-4o",
+        api_key=os.getenv("OPENAI_API_KEY"),
         streaming=True,
     )
     tools = _make_tools(ctx)

@@ -68,7 +68,9 @@ export function useTextAgent(
         const lines = decoder.decode(value, { stream: true }).split('\n')
         for (const line of lines) {
           if (!line.startsWith('data:')) continue
-          const chunk = line.slice(5).trimStart()
+          // "data: " — SSE 프로토콜 공백 1개만 제거, 내용 leading space 보존, \r 제거
+          const raw = line.slice(5)
+          const chunk = (raw.startsWith(' ') ? raw.slice(1) : raw).trimEnd()
           if (chunk === '[DONE]') break
           if (chunk) {
             setMessages(prev =>
