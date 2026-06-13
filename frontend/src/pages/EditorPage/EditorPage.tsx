@@ -11,7 +11,7 @@ import { SpriteRuntime, defaultSpriteState, SPRITE_LIBRARY } from './spriteRunti
 import type { SpriteState, Background } from './spriteRuntime'
 import { getProject, createProject, updateProject } from '../../api/projects'
 import axios from 'axios'
-import VoiceAgent from '../../components/VoiceAgent/VoiceAgent'
+import TextAgent from '../../components/TextAgent/TextAgent'
 
 registerBlocks()
 
@@ -22,7 +22,7 @@ export default function EditorPage() {
   const { user } = useAuth()
   const [isRunning, setIsRunning] = useState(false)
   const [spriteState, setSpriteState] = useState<SpriteState>(defaultSpriteState())
-  const [selectedBg, setSelectedBg] = useState<Background>('sky')
+  const [selectedBg, setSelectedBg] = useState<Background>('white')
   const [blockCount, setBlockCount] = useState(0)
   const [projectTitle, setProjectTitle] = useState('새 프로젝트')
   const [flyoutOpen, setFlyoutOpen] = useState(false)
@@ -218,6 +218,21 @@ export default function EditorPage() {
     }
   }, [id, navigate, showToast, projectTitle])
 
+  // 5초마다 자동 저장 (기존 프로젝트만, /editor/new 제외)
+  useEffect(() => {
+    if (!id || id === 'new') return
+    const timer = setInterval(async () => {
+      if (!workspaceRef.current) return
+      try {
+        const blocks_json = Blockly.serialization.workspaces.save(workspaceRef.current)
+        await updateProject(id, { blocks_json, title: projectTitle || '새 프로젝트' })
+      } catch {
+        // 자동 저장 실패는 조용히 무시
+      }
+    }, 5000)
+    return () => clearInterval(timer)
+  }, [id, projectTitle])
+
   return (
     <div className={s.page}>
       {/* TOOLBAR */}
@@ -291,7 +306,7 @@ export default function EditorPage() {
         <span style={{ marginLeft: 'auto' }}>WaCratch v1.0 🐾</span>
       </div>
 
-      <VoiceAgent workspaceRef={workspaceRef} projectTitle={projectTitle} />
+      <TextAgent workspaceRef={workspaceRef} projectTitle={projectTitle} />
       <Toast visible={toastVisible} message={toastMessage} type={toastType} />
     </div>
   )
